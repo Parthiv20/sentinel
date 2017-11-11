@@ -1,0 +1,63 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sentinel Cloud Analysis</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.4.2/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://openlayers.org/en/v4.4.2/build/ol.js"></script>
+    <style>
+      .ol-dragbox {
+        background-color: rgba(255,255,255,0.4);
+        border-color: rgb(245, 53, 47);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="bbox">
+            bbox:
+            <input name = "ul" type="text"/>
+            <input name = "lr" type="text"/>
+    </div>
+
+      
+    <script>
+       
+      var map = new ol.Map({
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.BingMaps({
+          key: 'AsgRbQKSPoEG6bx_hnkV7Uho58vxclGTOPJWsmg2goDKVG-wVx6iI6eImkGfE_lv',
+          imagerySet: 'Aerial',
+        })
+          })
+        ],
+        target: 'map',
+        view: new ol.View({
+          center: [0, 0],
+          zoom: 2
+        })
+      });
+
+      // a normal select interaction to handle click
+      var select = new ol.interaction.Select();
+      map.addInteraction(select);
+
+      var selectedFeatures = select.getFeatures();
+
+      // a DragBox interaction used to select features by drawing boxes
+      var dragBox = new ol.interaction.DragBox({
+        condition: ol.events.condition.platformModifierKeyOnly
+      });
+
+      map.addInteraction(dragBox);
+
+      document.getElementById("bbox").innerHTML = 
+
+      
+
+    </script>
+  </body>
+</html>
