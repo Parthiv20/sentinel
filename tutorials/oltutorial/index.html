@@ -16,21 +16,21 @@
   </head>
   <body>
     <div id="map" class="map"></div>
-    <div id="bbox">
-            bbox:
-            <input name = "ul" type="text"/>
-            <input name = "lr" type="text"/>
-    </div>
-
+    <form id="time range">
+        enter the data after 01-01-2015: <input type="date" id="start_date" value="2015-01-01">
+        enter the data before 11-11-2017: <input type="date" id="end_date" value="2017-11-11">
+        enter the cloud percent limit: <input type="number" id=cloud_percent value=30>
+    </form> 
       
     <script>
-       
+
       var map = new ol.Map({
         layers: [
           new ol.layer.Tile({
             source: new ol.source.BingMaps({
-          key: 'AsgRbQKSPoEG6bx_hnkV7Uho58vxclGTOPJWsmg2goDKVG-wVx6iI6eImkGfE_lv',
-          imagerySet: 'Aerial',
+             projection: 'EPSG:4326',
+             key: 'AsgRbQKSPoEG6bx_hnkV7Uho58vxclGTOPJWsmg2goDKVG-wVx6iI6eImkGfE_lv',
+             imagerySet: 'Aerial',
         })
           })
         ],
@@ -45,8 +45,7 @@
       var select = new ol.interaction.Select();
       map.addInteraction(select);
 
-      var selectedFeatures = select.getFeatures();
-
+     
       // a DragBox interaction used to select features by drawing boxes
       var dragBox = new ol.interaction.DragBox({
         condition: ol.events.condition.platformModifierKeyOnly
@@ -54,9 +53,18 @@
 
       map.addInteraction(dragBox);
 
-      document.getElementById("bbox").innerHTML = 
+      // triggers when drag box action starts on map
+      dragBox.on('boxend', function() {
+        var extent = dragBox.getGeometry().getExtent();
+        start_date = document.getElementById("start_date").value;
+        end_date = document.getElementById("end_date").value;
+        cloud_percent = document.getElementById("cloud_percent").value;
+        console.log(start_date)
+        console.log(end_date)
+        console.log(cloud_percent)
+        
+        });
 
-      
 
     </script>
   </body>
