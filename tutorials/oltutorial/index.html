@@ -17,9 +17,11 @@
   <body>
     <div id="map" class="map"></div>
     <form id="time range">
-        enter the data after 01-01-2015: <input type="date" id="start_date" value="2015-01-01">
-        enter the data before 11-11-2017: <input type="date" id="end_date" value="2017-11-11">
-        enter the cloud percent limit: <input type="number" id=cloud_percent value=30>
+        enter the date range start date: <input type="date" id="start_date" value="2015-01-01">          end date: <input type="date" id="end_date" value="2017-11-11"> <br>
+        <!-- TODO: create drop down for sensor selection -->
+        enter the sensor: <input type="text" id="sensor" value = "Sentinel2"> <br>
+        enter the cloud detection algorithm: <input type="text" id="algorithm" value = "Fmask"> <br>
+        enter the cloud percent limit: <input type="number" id="cloud_percent" value=30> 
     </form> 
       
     <script>
@@ -56,14 +58,36 @@
       // triggers when drag box action starts on map
       dragBox.on('boxend', function() {
         var extent = dragBox.getGeometry().getExtent();
-        start_date = document.getElementById("start_date").value;
-        end_date = document.getElementById("end_date").value;
-        cloud_percent = document.getElementById("cloud_percent").value;
+        var start_date = document.getElementById("start_date").value;
+        var end_date = document.getElementById("end_date").value;
+        var sensor = document.getElementById("sensor").value.toLowerCase();
+        var algorithm = document.getElementById("algorithm").value.toLowerCase();
+        var cloud_percent = document.getElementById("cloud_percent").value;
+        var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: 'EPSG:4326'})
+        
+        console.log(extent)
         console.log(start_date)
         console.log(end_date)
+        console.log(sensor)
+        console.log(algorithm)
         console.log(cloud_percent)
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', "http://localhost:5000/cloud-cover/fmask/sentinel2", false);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.send(params);
+
+      var myData = xhr.responseText;
+
+      console.log(myData)
+      
         
         });
+
+      
+
+
+
 
 
     </script>
