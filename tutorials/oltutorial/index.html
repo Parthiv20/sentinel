@@ -30,7 +30,6 @@
         layers: [
           new ol.layer.Tile({
             source: new ol.source.BingMaps({
-             projection: 'EPSG:4326',
              key: 'AsgRbQKSPoEG6bx_hnkV7Uho58vxclGTOPJWsmg2goDKVG-wVx6iI6eImkGfE_lv',
              imagerySet: 'Aerial',
         })
@@ -38,8 +37,8 @@
         ],
         target: 'map',
         view: new ol.View({
-          center: [0, 0],
-          zoom: 2
+          center: [1128023.4148, 7229341.3928],
+          zoom: 15
         })
       });
 
@@ -57,20 +56,23 @@
 
       // triggers when drag box action starts on map
       dragBox.on('boxend', function() {
-        var extent = dragBox.getGeometry().getExtent();
+        var extent = dragBox.getGeometry().getCoordinates();
         var start_date = document.getElementById("start_date").value;
         var end_date = document.getElementById("end_date").value;
         var sensor = document.getElementById("sensor").value.toLowerCase();
         var algorithm = document.getElementById("algorithm").value.toLowerCase();
         var cloud_percent = document.getElementById("cloud_percent").value;
-        var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: 'EPSG:4326'})
+        var in_srs =map.getView().getProjection().getCode(); 
+        var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs })
         
-        console.log(extent)
-        console.log(start_date)
-        console.log(end_date)
-        console.log(sensor)
-        console.log(algorithm)
-        console.log(cloud_percent)
+        console.log(extent);
+        console.log(start_date);
+        console.log(end_date);
+        console.log(sensor);
+        console.log(algorithm);
+        console.log(cloud_percent);
+        console.log(in_srs);
+        console.log(params);
 
       var xhr = new XMLHttpRequest();
       xhr.open('POST', "http://localhost:5000/cloud-cover/fmask/sentinel2", false);
@@ -79,10 +81,23 @@
 
       var myData = xhr.responseText;
 
-      console.log(myData)
+      console.log(myData);
+
+
+      // Apeending returned geojsons on basemap.
+      var geojsonObject = myData;
       
+      var vectorSource = new ol.source.Vector({
+        features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+      });
+
+      var vectorLayer = new ol.layer.Vector({
+        source: vectorSource
+      });
+      
+      map.addLayer(vectorLayer);
         
-        });
+      });
 
       
 
