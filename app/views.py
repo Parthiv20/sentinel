@@ -1,15 +1,110 @@
-from app import app
+# from app import app
 
 
 import subprocess
 import json
 import os
 import xml.etree.ElementTree as etree
+import random
+import time
 
 from osgeo import ogr
 from osgeo import osr
-from flask import request
+from flask import Flask, request, render_template, session, flash, redirect, url_for, jsonify
+from celery import Celery
 
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'top-secret!'
+
+
+# Celery configuration
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+
+# Initialize Celery
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+
+
+@celery.task(bind=True)
+def long_task(self):
+    # for i in range(1, 25):
+    #     time.sleep(1)
+    #     message1 = 'time count less than 10 seconds'
+    #     message2 = 'time count less than 20 seconds'
+    #     message3 = 'final time count'
+
+    #     if i < 10:
+    #         self.update_state(state='PROGRESS',
+    #                           meta={'current': i, 'total': 25,
+    #                                  'status': message1})
+    #     elif i < 20:
+    #         self.update_state(state='PROGRESS',
+    #                           meta={'current': i, 'total': 25,
+    #                                  'status': message2})
+    #     else:
+    #         self.update_state(state='PROGRESS',
+    #                           meta={'current': i, 'total': 25,
+    #                                  'status': message3})
+
+    gdalinfo = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
+
+
+    for img in ['rgb1.vrt', 'rgb2.vrt', 'rgb3.vrt']:
+        if img == 'rgb1.vrt':
+            img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img]).decode("utf-8"))
+            self.update_state(state='PROGRESS',meta={'current': 1, 'total': 3,'status': img_info})
+            time.sleep(15)
+        elif img == 'rgb2.vrt':
+            img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img]).decode("utf-8"))
+            self.update_state(state='PROGRESS',meta={'current': 2, 'total': 3,'status': img_info})            
+            time.sleep(15)
+        elif img == 'rgb3.vrt':
+            img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img]).decode("utf-8"))
+            self.update_state(state='PROGRESS',meta={'current': 3, 'total': 3,'status': img_info})
+            time.sleep(15)
+
+    return {'current': 3, 'total': 3, 'status': 'PROCESSED', 'result': 'FINISHED! BLEEK!'}
+
+
+
+
+@app.route('/longtask', methods=['POST'])
+def longtask():
+    task = long_task.apply_async()
+    return jsonify({}), 202, {'Location': url_for('taskstatus',
+                                                  task_id=task.id)}
+
+@app.route('/status/<task_id>')
+def taskstatus(task_id):
+    task = long_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info),  # this is the exception raised
+        }
+    return jsonify(response)
 
 
 @app.route('/')
@@ -130,3 +225,5 @@ def cloud_cover():
         
     return out_geojson
 
+if __name__ == '__main__':
+    app.run(debug=True)

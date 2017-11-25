@@ -78,8 +78,12 @@
       xhr.open('POST', "http://localhost:5000/cloud-cover/fmask/sentinel2", false);
       xhr.setRequestHeader("Content-Type", "application/json");
       xhr.send(params);
-
       var myData = xhr.responseText;
+
+      // xhr.open('POST', "http://localhost:5000/longtask", false);
+      // xhr.send();
+      // var myData = xhr.responseText;
+
 
       console.log(myData);
 
