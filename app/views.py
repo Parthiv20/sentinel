@@ -48,25 +48,46 @@ def long_task(self):
     #         self.update_state(state='PROGRESS',
     #                           meta={'current': i, 'total': 25,
     #                                  'status': message3})
+    
+    # TODO: optimise this step later
+    f = open('sp_subset.txt', 'r')
+    img_list = f.read().splitlines()
+
+    print(img_list)
+
+    gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
+
+    self.update_state(state='PROGRESS', meta={'current': 'step1', 'total': 'stpes6', 'status': 'This first step shortlisting images'})
+    time.sleep(10)
+
+    self.update_state(state='PROGRESS', meta={'current': 'step2', 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
+
+    subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
+    time.sleep(5)
+
+    self.update_state(state='PROGRESS', meta={'current': 'step3', 'total': 'stpes6', 'status': 'This third step sun angle image creation'})
+
+    subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
+    time.sleep(5)
+
+    self.update_state(state='PROGRESS', meta={'current': 'step4', 'total': 'stpes6', 'status': 'This fourth step cloud image creation its longer step'})
+
+    subprocess.call(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
 
     gdalinfo = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
 
+    img_info = json.loads(subprocess.check_output([gdalinfo, "-json", "cloud.img"]).decode("utf-8"))
 
-    for img in ['rgb1.vrt', 'rgb2.vrt', 'rgb3.vrt']:
-        if img == 'rgb1.vrt':
-            img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img]).decode("utf-8"))
-            self.update_state(state='PROGRESS',meta={'current': 1, 'total': 3,'status': img_info})
-            time.sleep(15)
-        elif img == 'rgb2.vrt':
-            img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img]).decode("utf-8"))
-            self.update_state(state='PROGRESS',meta={'current': 2, 'total': 3,'status': img_info})            
-            time.sleep(15)
-        elif img == 'rgb3.vrt':
-            img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img]).decode("utf-8"))
-            self.update_state(state='PROGRESS',meta={'current': 3, 'total': 3,'status': img_info})
-            time.sleep(15)
+    img_pixles = img_info["size"][0]*img_info["size"][1]
 
-    return {'current': 3, 'total': 3, 'status': 'PROCESSED', 'result': 'FINISHED! BLEEK!'}
+    cloud_pixels = img_info["rat"]["row"][2]["f"][0]
+
+    cloud_percent = str((cloud_pixels/img_pixles)*100)
+
+    self.update_state(state='PROGRESS', meta={'current': 'step5', 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage: '+cloud_percent})
+    time.sleep(10)
+
+    return {'current': 'step6', 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
 
 
 
@@ -171,7 +192,8 @@ def cloud_cover():
         date_img_dir = int(img_dir.split("_")[2].split("T")[0])
         if date_img_dir in time_range:
             tmp_subset.append(img_dir)
-    # spatila subset
+    
+    # TODO:spatila subset, optimise sp_subset as global array
     sp_subset = []
     for img_dir in tmp_subset:
         img_xml_tree = etree.parse(data_dir+os.sep+img_dir+os.sep+'INSPIRE.xml')
@@ -220,8 +242,12 @@ def cloud_cover():
     
     out_geojson = out_multi_poly.ExportToJson()
 
-    # could_cover analysis
-                    
+    # writing sp_subset arry to file so we can access in longterm task function. 
+    # TODO: optimise this step later
+    thefile = open('sp_subset.txt', 'w')
+
+    for img in sp_subset:
+        thefile.write("%s\n" % img)             
         
     return out_geojson
 
