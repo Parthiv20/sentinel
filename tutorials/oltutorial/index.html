@@ -65,31 +65,78 @@
         var in_srs =map.getView().getProjection().getCode(); 
         var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs })
         
-        console.log(extent);
-        console.log(start_date);
-        console.log(end_date);
-        console.log(sensor);
-        console.log(algorithm);
-        console.log(cloud_percent);
-        console.log(in_srs);
-        console.log(params);
+        // console.log(extent);
+        // console.log(start_date);
+        // console.log(end_date);
+        // console.log(sensor);
+        // console.log(algorithm);
+        // console.log(cloud_percent);
+        // console.log(in_srs);
+        // console.log(params);
 
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', "http://localhost:5000/cloud-cover/fmask/sentinel2", false);
-      xhr.setRequestHeader("Content-Type", "application/json");
-      xhr.send(params);
-      var myData = xhr.responseText;
-
-      // xhr.open('POST', "http://localhost:5000/longtask", false);
-      // xhr.send();
+      // xhr.open('POST', "http://localhost:5000/cloud-cover/fmask/sentinel2", false);
+      // xhr.setRequestHeader("Content-Type", "application/json");
+      // xhr.send(params);
       // var myData = xhr.responseText;
 
+      // console.log(myData)
 
-      console.log(myData);
 
+      // xhr.open('GET', "http://localhost:5000/", false);
+      // xhr.send();
+      // console.log("get test")
+      // console.log(xhr.responseText)
+
+
+
+      xhr.open('POST', "http://localhost:5000/longtask", false);
+      xhr.send();
+      process_url = xhr.getResponseHeader("location");
+
+      xhr.open('GET', process_url, false);
+      xhr.send();
+      var res = JSON.parse(xhr.responseText);
+      console.log(res['status']);
+      console.log(res['current']);
+      
+      // var geojsonObject = res['current'];
+      // var vectorSource = new ol.source.Vector({
+      // features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+      // });
+
+      // var vectorLayer = new ol.layer.Vector({
+      // source: vectorSource
+      // });
+      // map.addLayer(vectorLayer);
+
+
+      tmp = res['status'];
+
+      while (res['status'] != 'PROCESSED'){
+        xhr.open('GET', process_url, false);
+        xhr.send();
+        res = JSON.parse(xhr.responseText);
+        if (tmp != res['status']){
+            console.log(res['status'])
+            tmp = res['status']
+            console.log(res['current'])
+            // var geojsonObject = res['current'];
+            // var vectorSource = new ol.source.Vector({
+            // features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+            // });
+
+            // var vectorLayer = new ol.layer.Vector({
+            // source: vectorSource
+            // });
+            // map.addLayer(vectorLayer);
+        }
+        }
+
+      console.log("Process finished bleek")
 
       // Apeending returned geojsons on basemap.
-      var geojsonObject = myData;
+      var geojsonObject = '{ "type": "MultiPolygon", "coordinates": [ [ [ [ 832931.665986394393258, 6798050.761191098950803, 0.0 ], [ 832931.665986394393258, 6783069.103647204115987, 0.0 ], [ 857697.263150791521184, 6783069.103647204115987, 0.0 ], [ 832931.665986394393258, 6798050.761191098950803, 0.0 ] ] ] ]}';
       
       var vectorSource = new ol.source.Vector({
         features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
@@ -100,14 +147,10 @@
       });
       
       map.addLayer(vectorLayer);
+
+      console.log("test")
         
       });
-
-      
-
-
-
-
 
     </script>
   </body>

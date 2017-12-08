@@ -55,39 +55,41 @@ def long_task(self):
 
     print(img_list)
 
+    poly1 = '{ "type": "MultiPolygon", "coordinates": [ [ [ [ 832931.665986394393258, 6798050.761191098950803, 0.0 ], [ 832931.665986394393258, 6783069.103647204115987, 0.0 ], [ 857697.263150791521184, 6783069.103647204115987, 0.0 ], [ 857697.263150791521184, 6798050.761191098950803, 0.0 ], [ 832931.665986394393258, 6798050.761191098950803, 0.0 ] ] ] ]}'
+
     gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
 
-    self.update_state(state='PROGRESS', meta={'current': 'step1', 'total': 'stpes6', 'status': 'This first step shortlisting images'})
+    self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This first step shortlisting images'})
     time.sleep(10)
 
-    self.update_state(state='PROGRESS', meta={'current': 'step2', 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
+    self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
 
     subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
     time.sleep(5)
 
-    self.update_state(state='PROGRESS', meta={'current': 'step3', 'total': 'stpes6', 'status': 'This third step sun angle image creation'})
+    self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This third step sun angle image creation'})
 
     subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
     time.sleep(5)
 
-    self.update_state(state='PROGRESS', meta={'current': 'step4', 'total': 'stpes6', 'status': 'This fourth step cloud image creation its longer step'})
+    # self.update_state(state='PROGRESS', meta={'current': 'step4', 'total': 'stpes6', 'status': 'This fourth step cloud image creation its longer step'})
 
-    subprocess.call(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
+    # subprocess.call(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
 
-    gdalinfo = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
+    # gdalinfo = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
 
-    img_info = json.loads(subprocess.check_output([gdalinfo, "-json", "cloud.img"]).decode("utf-8"))
+    # img_info = json.loads(subprocess.check_output([gdalinfo, "-json", "cloud.img"]).decode("utf-8"))
 
-    img_pixles = img_info["size"][0]*img_info["size"][1]
+    # img_pixles = img_info["size"][0]*img_info["size"][1]
 
-    cloud_pixels = img_info["rat"]["row"][2]["f"][0]
+    # cloud_pixels = img_info["rat"]["row"][2]["f"][0]
 
-    cloud_percent = str((cloud_pixels/img_pixles)*100)
+    # cloud_percent = str((cloud_pixels/img_pixles)*100)
 
-    self.update_state(state='PROGRESS', meta={'current': 'step5', 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage: '+cloud_percent})
-    time.sleep(10)
+    # self.update_state(state='PROGRESS', meta={'current': 'step5', 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage: '+cloud_percent})
+    # time.sleep(10)
 
-    return {'current': 'step6', 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
+    return {'current': poly1, 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
 
 
 
@@ -248,7 +250,7 @@ def cloud_cover():
 
     for img in sp_subset:
         thefile.write("%s\n" % img)             
-        
+       
     return out_geojson
 
 if __name__ == '__main__':
