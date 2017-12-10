@@ -3,10 +3,11 @@
 <html>
   <head>
     <title>Sentinel Cloud Analysis</title>
-    <link rel="stylesheet" href="https://openlayers.org/en/v4.4.2/css/ol.css" type="text/css">
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.3/css/ol.css" type="text/css">
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
-    <script src="https://openlayers.org/en/v4.4.2/build/ol.js"></script>
+    <script src="https://openlayers.org/en/v4.6.3/build/ol.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
     <style>
       .ol-dragbox {
         background-color: rgba(255,255,255,0.4);
@@ -26,6 +27,67 @@
       
     <script>
 
+    var styles = {
+      'MultiPolygon': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: 'red',
+          width: 1
+        }),
+        fill: new ol.style.Fill({
+          color: 'rgba(255, 0, 0, 1)'
+        })
+      }),
+      'Polygon': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color:'red',
+          width:1
+        }),
+        fill: new ol.style.Fill({
+          color: 'rgba(255, 0, 0, 0.1)'
+        }),
+        text: new ol.style.Text({
+          font: '16px Calibri, sans-serif',
+          offsetY: -100,
+          fil: new ol.style.Fill({color: '#000'}),
+          stroke: new ol.style.Stroke({
+            color: '#FF0', width:2
+          }),
+          text: "Image Date: 10-12-2017 is Processing"
+        })
+      })
+    }
+
+    var myStyle = {
+      'Polygon': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color:'green',
+          width:1
+        }),
+        fill: new ol.style.Fill({
+          color: 'rgba(0, 0, 0, 1)'
+        }),
+        text: new ol.style.Text({
+          font: '16px Calibri, sans-serif',
+          fil: new ol.style.Fill({color: '#000'}),
+          stroke: new ol.style.Stroke({
+            color: '#FFF', width:2
+          }),
+          text: "Image Date: 10-12-2017 sucessfully processed"
+        })
+      })
+    }
+
+    var styleFunction = function(feature){
+      return styles[feature.getGeometry().getType()];
+    };
+
+    var myStyleFunction = function(feature){
+      return myStyle[feature.getGeometry().getType()];
+    }
+
+
+
+
       var map = new ol.Map({
         layers: [
           new ol.layer.Tile({
@@ -37,6 +99,7 @@
         ],
         target: 'map',
         view: new ol.View({
+          projection: 'EPSG:3857',
           center: [848371.9457, 6791859.3619],
           zoom: 10
         })
@@ -46,7 +109,8 @@
       var select = new ol.interaction.Select();
       map.addInteraction(select);
 
-     
+
+
       // a DragBox interaction used to select features by drawing boxes
       var dragBox = new ol.interaction.DragBox({
         condition: ol.events.condition.platformModifierKeyOnly
@@ -57,6 +121,8 @@
       // triggers when drag box action starts on map
       dragBox.on('boxend', function() {
         var extent = dragBox.getGeometry().getCoordinates();
+        var bbox = dragBox.getGeometry().getExtent();
+        var center = [(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2];
         var start_date = document.getElementById("start_date").value;
         var end_date = document.getElementById("end_date").value;
         var sensor = document.getElementById("sensor").value.toLowerCase();
@@ -64,8 +130,10 @@
         var cloud_percent = document.getElementById("cloud_percent").value;
         var in_srs =map.getView().getProjection().getCode(); 
         var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs })
-        
-        // console.log(extent);
+
+        console.log(extent);
+        console.log(bbox);
+        console.log(center);
         // console.log(start_date);
         // console.log(end_date);
         // console.log(sensor);
@@ -74,84 +142,85 @@
         // console.log(in_srs);
         // console.log(params);
 
-      var xhr = new XMLHttpRequest();
-      // xhr.open('POST', "http://localhost:5000/cloud-cover/fmask/sentinel2", false);
-      // xhr.setRequestHeader("Content-Type", "application/json");
-      // xhr.send(params);
-      // var myData = xhr.responseText;
+        var data = {'extent':extent, 'center':center};
 
-      // console.log(myData)
+        $.ajax({
+          type: 'POST',
+          url: "http://localhost:5000/longtask",
+          data: JSON.stringify(data, null, '\t'),
+          contentType: 'application/json;charset=UTF-8',
+          success: function(data, status, request){
+            status_url = request.getResponseHeader('Location');
+            console.log(status_url);
+            update_progress(status_url)
+          },
+          error:function() {
+            alert("Unexpected error");
+          }
+        })
 
+        var tmp
 
-      // xhr.open('GET', "http://localhost:5000/", false);
-      // xhr.send();
-      // console.log("get test")
-      // console.log(xhr.responseText)
+        function update_progress(status_url){
+          $.getJSON(status_url, function(data){
+            if (data['status'] === "PROCESSED"){
+              console.log(data);
+              console.log(data['current'])
 
+              var vectorLayerArray = new Array();
+              map.getLayers().getArray().some(function(layer,i,array){
+                if (layer instanceof ol.layer.Vector){
+                  vectorLayerArray.push(layer);
+                }
+              }, this);
+              vectorLayerArray.forEach(function(aVecLayer){
+                map.removeLayer(aVecLayer);
+              })
+              var geojsonObject = data['current'];
+              var vectorSource = new ol.source.Vector({
+              features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+              });
 
+              var vectorLayer = new ol.layer.Vector({
+              source: vectorSource,
+              style: myStyleFunction
+              });
+              map.addLayer(vectorLayer);
+              var extent = vectorLayer.getSource().getExtent();
+              map.getView().fit(extent, map.getSize());
 
-      xhr.open('POST', "http://localhost:5000/longtask", false);
-      xhr.send();
-      process_url = xhr.getResponseHeader("location");
+            }
+            else {
+              if (tmp != data['status']){
+                 // retun in 2 seconds
+                console.log(tmp)
+                console.log("re run in 2 seconds")
+                tmp = data['status'];
+                console.log(data['current'])
+                var geojsonObject = data['current'];
+                var vectorSource = new ol.source.Vector({
+                features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+                 });
 
-      xhr.open('GET', process_url, false);
-      xhr.send();
-      var res = JSON.parse(xhr.responseText);
-      console.log(res['status']);
-      console.log(res['current']);
-      
-      // var geojsonObject = res['current'];
-      // var vectorSource = new ol.source.Vector({
-      // features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
-      // });
-
-      // var vectorLayer = new ol.layer.Vector({
-      // source: vectorSource
-      // });
-      // map.addLayer(vectorLayer);
-
-
-      tmp = res['status'];
-
-      while (res['status'] != 'PROCESSED'){
-        xhr.open('GET', process_url, false);
-        xhr.send();
-        res = JSON.parse(xhr.responseText);
-        if (tmp != res['status']){
-            console.log(res['status'])
-            tmp = res['status']
-            console.log(res['current'])
-            // var geojsonObject = res['current'];
-            // var vectorSource = new ol.source.Vector({
-            // features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
-            // });
-
-            // var vectorLayer = new ol.layer.Vector({
-            // source: vectorSource
-            // });
-            // map.addLayer(vectorLayer);
-        }
-        }
-
-      console.log("Process finished bleek")
-
-      // Apeending returned geojsons on basemap.
-      var geojsonObject = '{ "type": "MultiPolygon", "coordinates": [ [ [ [ 832931.665986394393258, 6798050.761191098950803, 0.0 ], [ 832931.665986394393258, 6783069.103647204115987, 0.0 ], [ 857697.263150791521184, 6783069.103647204115987, 0.0 ], [ 832931.665986394393258, 6798050.761191098950803, 0.0 ] ] ] ]}';
-      
-      var vectorSource = new ol.source.Vector({
-        features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
-      });
-
-      var vectorLayer = new ol.layer.Vector({
-        source: vectorSource
-      });
-      
-      map.addLayer(vectorLayer);
-
-      console.log("test")
+                var vectorLayer = new ol.layer.Vector({
+                source: vectorSource,
+                style: styleFunction
+                });
+                map.addLayer(vectorLayer);
+              }
+              else{
+              }
+              setTimeout(function(){
+              update_progress(status_url);
+              }, 2000);
+            }
+            
+          });
+        };
         
       });
 
+      
     </script>
   </body>
 </html>

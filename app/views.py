@@ -7,12 +7,13 @@ import os
 import xml.etree.ElementTree as etree
 import random
 import time
+import copy
 
 from osgeo import ogr
 from osgeo import osr
 from flask import Flask, request, render_template, session, flash, redirect, url_for, jsonify
 from celery import Celery
-
+from flask import session
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'top-secret!'
@@ -50,29 +51,75 @@ def long_task(self):
     #                                  'status': message3})
     
     # TODO: optimise this step later
+
     f = open('sp_subset.txt', 'r')
     img_list = f.read().splitlines()
-
+    f.close()
     print(img_list)
 
-    poly1 = '{ "type": "MultiPolygon", "coordinates": [ [ [ [ 832931.665986394393258, 6798050.761191098950803, 0.0 ], [ 832931.665986394393258, 6783069.103647204115987, 0.0 ], [ 857697.263150791521184, 6783069.103647204115987, 0.0 ], [ 857697.263150791521184, 6798050.761191098950803, 0.0 ], [ 832931.665986394393258, 6798050.761191098950803, 0.0 ] ] ] ]}'
+    with open('data.txt') as f:
+        in_dict = json.load(f)
+
+    print(in_dict)
+
+    poly2_extent = copy.deepcopy(in_dict['extent'])
+
+    del poly2_extent[0][3]
+    poly2_extent[0][2] = copy.deepcopy(in_dict['center'])
+
+    poly3_extent = copy.deepcopy(in_dict['extent'])
+
+    del poly3_extent[0][2]
+    poly3_extent[0][1] = copy.deepcopy(in_dict['center'])   
+
+    poly4_extent = copy.deepcopy(in_dict['extent'])
+    
+    del poly4_extent[0][0]
+    del poly4_extent[0][-1]
+    poly4_extent[0][2] = copy.deepcopy(in_dict['center'])
+    poly4_extent[0].append(poly4_extent[0][0])
+
+
+    poly5_extent = copy.deepcopy(in_dict['extent'])
+    
+    del poly5_extent[0][0]
+    del poly5_extent[0][-1]
+    del poly5_extent[0][0]
+    poly5_extent[0].append(in_dict['center'])
+    poly5_extent[0].append(poly5_extent[0][0])
+
+
+
+    poly1 = '{ "type": "Polygon", "coordinates":'+str(in_dict['extent'])+'}'
+
+    poly2 = '{ "type": "MultiPolygon", "coordinates":['+str(poly2_extent)+']}'
+
+    poly3 = '{ "type": "MultiPolygon", "coordinates":['+str(poly3_extent)+']}'
+
+    poly4 = '{ "type": "MultiPolygon", "coordinates":['+str(poly4_extent)+']}'
+
+    poly5 = '{ "type": "MultiPolygon", "coordinates":['+str(poly5_extent)+']}'
+
+
 
     gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
 
+
     self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This first step shortlisting images'})
-    time.sleep(10)
+    time.sleep(5)
 
-    self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
-
+    self.update_state(state='PROGRESS', meta={'current': poly2, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
+    
     subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
     time.sleep(5)
 
-    self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This third step sun angle image creation'})
+    self.update_state(state='PROGRESS', meta={'current': poly3, 'total': 'stpes6', 'status': 'This third step sun angle image creation'})
 
-    subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
+    #subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
     time.sleep(5)
 
-    # self.update_state(state='PROGRESS', meta={'current': 'step4', 'total': 'stpes6', 'status': 'This fourth step cloud image creation its longer step'})
+    self.update_state(state='PROGRESS', meta={'current': poly4, 'total': 'stpes6', 'status': 'This fourth step cloud image creation its longer step'})
+    time.sleep(5)
 
     # subprocess.call(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
 
@@ -86,8 +133,8 @@ def long_task(self):
 
     # cloud_percent = str((cloud_pixels/img_pixles)*100)
 
-    # self.update_state(state='PROGRESS', meta={'current': 'step5', 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage: '+cloud_percent})
-    # time.sleep(10)
+    self.update_state(state='PROGRESS', meta={'current': poly5, 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage:'})
+    time.sleep(5)
 
     return {'current': poly1, 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
 
@@ -96,13 +143,17 @@ def long_task(self):
 
 @app.route('/longtask', methods=['POST'])
 def longtask():
+    with open('data.txt', 'w') as outfile:
+        json.dump(request.json, outfile)
     task = long_task.apply_async()
     return jsonify({}), 202, {'Location': url_for('taskstatus',
                                                   task_id=task.id)}
 
+
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
     task = long_task.AsyncResult(task_id)
+    
     if task.state == 'PENDING':
         response = {
             'state': task.state,
