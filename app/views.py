@@ -8,12 +8,15 @@ import xml.etree.ElementTree as etree
 import random
 import time
 import copy
+import itertools
 
 from osgeo import ogr
 from osgeo import osr
 from flask import Flask, request, render_template, session, flash, redirect, url_for, jsonify
 from celery import Celery
 from flask import session
+from subprocess import Popen, PIPE, CalledProcessError
+from geojson import Polygon
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'top-secret!'
@@ -105,21 +108,21 @@ def long_task(self):
     gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
 
 
-    self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This first step shortlisting images'})
-    time.sleep(5)
+    # self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This first step shortlisting images'})
+    # #time.sleep(5)
 
-    self.update_state(state='PROGRESS', meta={'current': poly2, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
+    # self.update_state(state='PROGRESS', meta={'current': poly2, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
     
-    subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
-    time.sleep(5)
+    # #subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
+    # #time.sleep(5)
 
-    self.update_state(state='PROGRESS', meta={'current': poly3, 'total': 'stpes6', 'status': 'This third step sun angle image creation'})
+    # self.update_state(state='PROGRESS', meta={'current': poly3, 'total': 'stpes6', 'status': 'This third step sun angle image creation'})
 
-    #subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
-    time.sleep(5)
+    # #subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
+    # #time.sleep(5)
 
-    self.update_state(state='PROGRESS', meta={'current': poly4, 'total': 'stpes6', 'status': 'This fourth step cloud image creation its longer step'})
-    time.sleep(5)
+    # self.update_state(state='PROGRESS', meta={'current': poly4, 'total': 'stpes6', 'status': 'This fourth step cloud image creation its longer step'})
+    # #time.sleep(5)
 
     # subprocess.call(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
 
@@ -134,9 +137,103 @@ def long_task(self):
     # cloud_percent = str((cloud_pixels/img_pixles)*100)
 
     self.update_state(state='PROGRESS', meta={'current': poly5, 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage:'})
-    time.sleep(5)
+    #time.sleep(5)
 
-    return {'current': poly1, 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
+
+    # tiles creation for the image
+    img_xml_tree = etree.parse('/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/INSPIRE.xml')
+    img_xml_root = img_xml_tree.getroot()
+    # extracting image boundary polygon from xml
+    img_bbox_char = img_xml_root[9][0][1][0].text.split(" ")
+
+    # removing last element as it is empty string
+    img_bbox_char.pop()
+    # converting list to iter for pairwaise iteration
+    img_bbox_char = iter(img_bbox_char)
+
+    img_bbox = []
+    # open layers takes in different order for x,y
+    for x in img_bbox_char:
+        img_bbox.append([float(next(img_bbox_char)), float(x)])
+    
+
+    # Create ring
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+
+    for point in img_bbox:
+        ring.AddPoint(point[0], point[1])
+
+    # Create polygon
+    img_poly = ogr.Geometry(ogr.wkbPolygon)
+    img_poly.AddGeometry(ring) 
+
+    # creating projection
+    img_srs = osr.SpatialReference()
+    img_srs.ImportFromEPSG(4326)
+
+    out_srs = osr.SpatialReference()
+    out_srs.ImportFromEPSG(3857)
+
+    img_poly.AssignSpatialReference(img_srs)
+
+    transform = osr.CoordinateTransformation(img_srs, out_srs)
+
+    img_poly.Transform(transform)
+
+    img_geojson = img_poly.ExportToJson()
+
+    print(img_geojson)
+
+    with open('geoj', 'w')as f:
+        f.write(img_geojson)
+
+    #geojson grids creation as list
+
+    a = list(range(838405,1017826,40000))
+
+    b = list(range(6684229,6863729,50000))
+
+    m = zip(a,a[1:])
+    n = zip(b,b[1:])
+
+    mn_cart = list(itertools.product(m,n))
+
+    geoj_list = []
+
+    for x in mn_cart:
+        result = list(itertools.product([x[0][0],x[0][1]],[x[1][0],x[1][1]]))
+
+        result[2], result[3] = result[3], result[2]
+
+        result.append(result[0])
+
+
+        gjson = Polygon([result])
+
+        print(gjson)
+        geoj_list.append(gjson)
+
+    geoj_list.append(gjson)
+
+    # test for small size updates
+    i = 0
+    crop_path = '/mnt/c/Users/pgulla/Desktop/thesis/openeo/crop_test/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA'
+    # p = Popen(['inotifywait', '-m', '-r', '-e', 'create', './'], stdout=PIPE, bufsize=1, universal_newlines=True)
+    with Popen(['inotifywait', '-m', '-r', '-e', 'create', './'], stdout=PIPE, bufsize=1, universal_newlines=True) as p:
+        subprocess.Popen([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
+        subprocess.Popen(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
+        subprocess.Popen(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
+        for line in p.stdout:
+            #print(str(i)+line, end='') # process line here
+            self.update_state(state='PROGRESS', meta={'current': str(geoj_list[i]), 'total': str(13), 'status': 'This is'+str(i)+'th step'})
+            time.sleep(2)
+            i +=1
+            print(i)
+            if i == 13:
+                p.kill()
+
+
+    return {'current': img_geojson, 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
 
 
 
@@ -227,7 +324,6 @@ def cloud_cover():
     out_multi_poly = ogr.Geometry(ogr.wkbMultiPolygon)
 
     out_multi_poly.AddGeometry(in_poly)
-
         
 
     # shortlisting images in give time and spatila extend.
@@ -246,7 +342,7 @@ def cloud_cover():
         if date_img_dir in time_range:
             tmp_subset.append(img_dir)
     
-    # TODO:spatila subset, optimise sp_subset as global array
+    # TODO:spatial subset, optimise sp_subset as global array
     sp_subset = []
     for img_dir in tmp_subset:
         img_xml_tree = etree.parse(data_dir+os.sep+img_dir+os.sep+'INSPIRE.xml')
@@ -295,7 +391,7 @@ def cloud_cover():
     
     out_geojson = out_multi_poly.ExportToJson()
 
-    # writing sp_subset arry to file so we can access in longterm task function. 
+    # writing sp_subset arry to file so we can access it in longterm task function. 
     # TODO: optimise this step later
     thefile = open('sp_subset.txt', 'w')
 
