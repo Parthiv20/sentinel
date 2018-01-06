@@ -9,6 +9,7 @@ import random
 import time
 import copy
 import itertools
+import random
 
 from osgeo import ogr
 from osgeo import osr
@@ -92,6 +93,7 @@ def long_task(self):
     poly5_extent[0].append(poly5_extent[0][0])
 
 
+    img_poly = '{ "type": "Polygon", "coordinates": [ [ [ 838405.962330951588228, 6862082.408005863428116, 0.0 ], [ 1017826.472330141579732, 6863729.436798275448382, 0.0 ], [ 1017481.162819475051947, 6685785.296250037848949, 0.0 ], [ 841943.274732842110097, 6684229.797995020635426, 0.0 ], [ 838405.962330951588228, 6862082.408005863428116, 0.0 ] ] ] }'
 
     poly1 = '{ "type": "Polygon", "coordinates":'+str(in_dict['extent'])+'}'
 
@@ -108,7 +110,7 @@ def long_task(self):
     gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
 
 
-    # self.update_state(state='PROGRESS', meta={'current': poly1, 'total': 'stpes6', 'status': 'This first step shortlisting images'})
+    self.update_state(state='PROGRESS', meta={'current': img_poly, 'total': 'stpes6', 'status': 'This first step shortlisting images'})
     # #time.sleep(5)
 
     # self.update_state(state='PROGRESS', meta={'current': poly2, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
@@ -136,7 +138,7 @@ def long_task(self):
 
     # cloud_percent = str((cloud_pixels/img_pixles)*100)
 
-    self.update_state(state='PROGRESS', meta={'current': poly5, 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage:'})
+    #self.update_state(state='PROGRESS', meta={'current': poly5, 'total': 'stpes6', 'status': 'This fifth step cloud cover percentage:'})
     #time.sleep(5)
 
 
@@ -189,9 +191,9 @@ def long_task(self):
 
     #geojson grids creation as list
 
-    a = list(range(838405,1017826,40000))
+    a = list(range(838405,1017826,17942))
 
-    b = list(range(6684229,6863729,50000))
+    b = list(range(6684229,6863729,17949))
 
     m = zip(a,a[1:])
     n = zip(b,b[1:])
@@ -210,26 +212,25 @@ def long_task(self):
 
         gjson = Polygon([result])
 
-        print(gjson)
         geoj_list.append(gjson)
-
     geoj_list.append(gjson)
+
 
     # test for small size updates
     i = 0
     crop_path = '/mnt/c/Users/pgulla/Desktop/thesis/openeo/crop_test/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA'
     # p = Popen(['inotifywait', '-m', '-r', '-e', 'create', './'], stdout=PIPE, bufsize=1, universal_newlines=True)
-    with Popen(['inotifywait', '-m', '-r', '-e', 'create', './'], stdout=PIPE, bufsize=1, universal_newlines=True) as p:
+    with Popen(['inotifywait', '-m', '-r', './'], stdout=PIPE, bufsize=1, universal_newlines=True) as p:
         subprocess.Popen([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
         subprocess.Popen(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
         subprocess.Popen(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
         for line in p.stdout:
             #print(str(i)+line, end='') # process line here
-            self.update_state(state='PROGRESS', meta={'current': str(geoj_list[i]), 'total': str(13), 'status': 'This is'+str(i)+'th step'})
+            self.update_state(state='PROGRESS', meta={'current': str(geoj_list.pop(random.randrange(len(geoj_list)))), 'total': str(13), 'status': 'This is'+str(i)+'th step'})
             time.sleep(2)
             i +=1
             print(i)
-            if i == 13:
+            if i == 100:
                 p.kill()
 
 
