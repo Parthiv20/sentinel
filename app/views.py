@@ -10,6 +10,13 @@ import time
 import copy
 import itertools
 import random
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt; plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
+import statistics as stats
+
 
 from osgeo import ogr
 from osgeo import osr
@@ -34,84 +41,73 @@ celery.conf.update(app.config)
 
 
 @celery.task(bind=True)
-def long_task(self):
-    # for i in range(1, 25):
-    #     time.sleep(1)
-    #     message1 = 'time count less than 10 seconds'
-    #     message2 = 'time count less than 20 seconds'
-    #     message3 = 'final time count'
-
-    #     if i < 10:
-    #         self.update_state(state='PROGRESS',
-    #                           meta={'current': i, 'total': 25,
-    #                                  'status': message1})
-    #     elif i < 20:
-    #         self.update_state(state='PROGRESS',
-    #                           meta={'current': i, 'total': 25,
-    #                                  'status': message2})
-    #     else:
-    #         self.update_state(state='PROGRESS',
-    #                           meta={'current': i, 'total': 25,
-    #                                  'status': message3})
-    
+def long_task(self):    
     # TODO: optimise this step later
 
-    f = open('sp_subset.txt', 'r')
-    img_list = f.read().splitlines()
-    f.close()
-    print(img_list)
+    # f = open('sp_subset.txt', 'r')
+    # img_list = f.read().splitlines()
+    # f.close()
+    # print(img_list)
 
     with open('data.txt') as f:
         in_dict = json.load(f)
 
-    print(in_dict)
+    # print(in_dict)
 
-    poly2_extent = copy.deepcopy(in_dict['extent'])
+    # poly2_extent = copy.deepcopy(in_dict['extent'])
 
-    del poly2_extent[0][3]
-    poly2_extent[0][2] = copy.deepcopy(in_dict['center'])
+    # del poly2_extent[0][3]
+    # poly2_extent[0][2] = copy.deepcopy(in_dict['center'])
 
-    poly3_extent = copy.deepcopy(in_dict['extent'])
+    # poly3_extent = copy.deepcopy(in_dict['extent'])
 
-    del poly3_extent[0][2]
-    poly3_extent[0][1] = copy.deepcopy(in_dict['center'])   
+    # del poly3_extent[0][2]
+    # poly3_extent[0][1] = copy.deepcopy(in_dict['center'])   
 
-    poly4_extent = copy.deepcopy(in_dict['extent'])
+    # poly4_extent = copy.deepcopy(in_dict['extent'])
     
-    del poly4_extent[0][0]
-    del poly4_extent[0][-1]
-    poly4_extent[0][2] = copy.deepcopy(in_dict['center'])
-    poly4_extent[0].append(poly4_extent[0][0])
+    # del poly4_extent[0][0]
+    # del poly4_extent[0][-1]
+    # poly4_extent[0][2] = copy.deepcopy(in_dict['center'])
+    # poly4_extent[0].append(poly4_extent[0][0])
 
 
-    poly5_extent = copy.deepcopy(in_dict['extent'])
+    # poly5_extent = copy.deepcopy(in_dict['extent'])
     
-    del poly5_extent[0][0]
-    del poly5_extent[0][-1]
-    del poly5_extent[0][0]
-    poly5_extent[0].append(in_dict['center'])
-    poly5_extent[0].append(poly5_extent[0][0])
+    # del poly5_extent[0][0]
+    # del poly5_extent[0][-1]
+    # del poly5_extent[0][0]
+    # poly5_extent[0].append(in_dict['center'])
+    # poly5_extent[0].append(poly5_extent[0][0])
 
 
     img_poly = '{ "type": "Polygon", "coordinates": [ [ [ 838405.962330951588228, 6862082.408005863428116, 0.0 ], [ 1017826.472330141579732, 6863729.436798275448382, 0.0 ], [ 1017481.162819475051947, 6685785.296250037848949, 0.0 ], [ 841943.274732842110097, 6684229.797995020635426, 0.0 ], [ 838405.962330951588228, 6862082.408005863428116, 0.0 ] ] ] }'
 
     poly1 = '{ "type": "Polygon", "coordinates":'+str(in_dict['extent'])+'}'
 
-    poly2 = '{ "type": "MultiPolygon", "coordinates":['+str(poly2_extent)+']}'
+    # poly2 = '{ "type": "MultiPolygon", "coordinates":['+str(poly2_extent)+']}'
 
-    poly3 = '{ "type": "MultiPolygon", "coordinates":['+str(poly3_extent)+']}'
+    # poly3 = '{ "type": "MultiPolygon", "coordinates":['+str(poly3_extent)+']}'
 
-    poly4 = '{ "type": "MultiPolygon", "coordinates":['+str(poly4_extent)+']}'
+    # poly4 = '{ "type": "MultiPolygon", "coordinates":['+str(poly4_extent)+']}'
 
-    poly5 = '{ "type": "MultiPolygon", "coordinates":['+str(poly5_extent)+']}'
+    # poly5 = '{ "type": "MultiPolygon", "coordinates":['+str(poly5_extent)+']}'
 
+
+    self.update_state(state='PROGRESS', meta={'current': poly1, 'type': 'vector', 'status': 'This first step shortlisting images'})
+    time.sleep(1)
 
 
     gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
 
+    gdal_translate = subprocess.check_output(["which", "gdal_translate"])[:-1].decode("utf-8")
 
-    self.update_state(state='PROGRESS', meta={'current': img_poly, 'total': 'stpes6', 'status': 'This first step shortlisting images'})
-    # #time.sleep(5)
+    subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "rgb.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2"])
+
+    subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-scale", "rgb.vrt", "rgb.jpg"])
+
+    self.update_state(state='PROGRESS', meta={'current': 'raster', 'type': 'raster', 'status': 'This second step shortlisting images'})
+    time.sleep(1)
 
     # self.update_state(state='PROGRESS', meta={'current': poly2, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
     
@@ -184,10 +180,10 @@ def long_task(self):
 
     img_geojson = img_poly.ExportToJson()
 
-    print(img_geojson)
+    # print(img_geojson)
 
-    with open('geoj', 'w')as f:
-        f.write(img_geojson)
+    # with open('geoj', 'w')as f:
+    #     f.write(img_geojson)
 
     #geojson grids creation as list
 
@@ -224,15 +220,72 @@ def long_task(self):
         subprocess.Popen([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
         subprocess.Popen(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
         subprocess.Popen(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
+        subprocess.Popen(["rm", "data.txt"])
+        subprocess.Popen(["rm", "rgb.vrt"])
         for line in p.stdout:
             #print(str(i)+line, end='') # process line here
-            self.update_state(state='PROGRESS', meta={'current': str(geoj_list.pop(random.randrange(len(geoj_list)))), 'total': str(13), 'status': 'This is'+str(i)+'th step'})
-            time.sleep(2)
+            self.update_state(state='PROGRESS', meta={'current': str(geoj_list.pop(random.randrange(len(geoj_list)))), 'type': 'vector', 'status': 'This is'+str(i)+'th step'})
             i +=1
-            print(i)
-            if i == 100:
-                p.kill()
+            print(str(i)+line)
+            time.sleep(0.800)
+            if i == 101:
+            # to get 100 grids add aditional 3 steps here
+                break
+        p.kill()
 
+        subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-expand", "rgb", "-scale", "cloud.img", "rgb.jpg"])
+        
+        self.update_state(state='PROGRESS', meta={'current': 'raster', 'type': 'raster', 'status': 'This is last step shortlisting images'})
+        time.sleep(10)
+
+        
+        # Creating final result image.
+        objects = ('2017-05-05', '2017-06-05', '2017-07-05', '2017-08-05', '2017-09-05', '2017-10-05', '2017-11-05', '2017-12-05')
+        y_pos = np.arange(len(objects))
+        cloud_percent = [30, 10, 20, 16, 18, 50, 38, 28]
+ 
+        barlist = plt.bar(y_pos, cloud_percent, align='center', alpha=0.5)
+
+        for i in barlist:
+            if i.get_height() >=25:
+                i.set_color('r')
+            else:
+                i.set_color('g')
+        
+        
+        #     if i.get_height() > 25:
+        #         i.set_color('r')
+        # else:
+        #     i.set_color('g')
+
+        plt.xticks(y_pos, objects, rotation=45)
+        plt.ylabel('% of cloud cover')
+        plt.xlabel('Image acquition dates')
+        plt.title('Sentinel 2A images cloud cover')
+
+        x = stats.mean(cloud_percent)
+        y = stats.median(cloud_percent)
+        a = stats.stdev(cloud_percent)
+        b = stats.variance(cloud_percent)
+
+
+        # cloud_stats = """mean     :"""+format(x, '.2f')+"""
+        # median  :"""+format(y, '.2f')+"""
+        # stdev     :"""+format(a, '.2f')+"""
+        # variance:"""+format(b, '.2f')+""" """
+
+
+        cloud_stats = 'mean     :'+format(x, '.2f')+os.linesep+'median  :'+format(y, '.2f')+os.linesep+'stdev     :'+format(a, '.2f')+os.linesep+'variance:'+format(b, '.2f')
+
+
+        plt.axhline(y=25, color='b', linestyle='-')
+
+        plt.text(len(cloud_percent),(max(cloud_percent))*0.4,cloud_stats, fontsize=20)
+ 
+        plt.savefig('cloud.png', bbox_inches="tight")
+
+        #subprocess.call(["convert", "bar_chart.png", "cloud.jpg"])
+       
 
     return {'current': img_geojson, 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
 
