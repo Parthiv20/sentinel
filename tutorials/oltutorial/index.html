@@ -8,10 +8,21 @@
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="https://openlayers.org/en/v4.6.3/build/ol.js"></script>
     <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+
     <style>
       .ol-dragbox {
         background-color: rgba(255,255,255,0.4);
         border-color: rgb(245, 53, 47);
+      }
+      #vienna {
+        text-decoration: none;
+        color:red;
+        font-size: 16pt;
+        font-weight: bold;
+        /* text-shadow: black 0.1em 0.1em 0.2em; */
+        padding: 0.2em;
+        background-color: rgba(255,255,255,0.3);
+        border: 1px solid rgba(255,255,255,0.8);
       }
     </style>
   </head>
@@ -24,6 +35,11 @@
         enter the cloud detection algorithm: <input type="text" id="algorithm" value = "Fmask"> <br>
         enter the cloud percent limit: <input type="number" id="cloud_percent" value=30> 
     </form> 
+    
+    <!-- Clickable label for Vienna -->
+    <p class="overlay" id="vienna" target="_blank" href="http://en.wikipedia.org/wiki/Vienna"><span style='color:rgb(0, 60, 255);'>2017-05-05</span>, <span style='color:rgb(0, 60, 255);'>2017-06-05</span>, <span style='color:yellow;'>2017-08-05</span>, 2017-11-05, 2017-12-05</p>
+               
+        
       
     <script>
 
@@ -46,13 +62,12 @@
           color: 'rgba(255, 0, 0, 0.1)'
         }),
         text: new ol.style.Text({
-          font: '16px Calibri, sans-serif',
-          offsetY: -100,
+          font: '24px Calibri, sans-serif',
           fil: new ol.style.Fill({color: '#000'}),
           stroke: new ol.style.Stroke({
             color: '#FF0', width:2
           }),
-          text: "Image Date: 10-12-2017 is Processing"
+          text: "Spatio-Temporal Short-listing of Images"
         })
       })
     }
@@ -72,7 +87,7 @@
           stroke: new ol.style.Stroke({
             color: '#FFF', width:2
           }),
-          text: "Image Date: 10-12-2017 sucessfully processed"
+          text: "Spatio-temporal short listing of images"
         })
       })
     }
@@ -109,6 +124,20 @@
       var select = new ol.interaction.Select();
       map.addInteraction(select);
 
+
+
+      // testing text box
+      var pos = [838405.962, 6863745.147];
+
+      // Vienna marker
+      var marker = new ol.Overlay({
+          position: pos,
+          positioning: 'bottom-left',
+          element: document.getElementById('vienna'),
+          stopEvent: false
+      });
+      
+      
 
 
       // a DragBox interaction used to select features by drawing boxes
@@ -181,38 +210,64 @@
               features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
               });
 
-              var vectorLayer = new ol.layer.Vector({
-              source: vectorSource,
-              style: myStyleFunction
+              var extent = [838405.962, 6684208.676, 1017845.334, 6863745.147];
+                
+              var ovProj = ol.proj.get('EPSG:3857');
+                
+              var rasterLayer = new ol.layer.Image({
+                  source: new ol.source.ImageStatic({
+                      url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/cloud.png',
+                      imageSize:[1848, 1849],
+                      projection: ovProj,
+                      imageExtent: extent
+                  })
               });
-              map.addLayer(vectorLayer);
-              var extent = vectorLayer.getSource().getExtent();
-              map.getView().fit(extent, map.getSize());
+
+              map.removeOverlay(marker);          
+              map.addLayer(rasterLayer);
+               
 
             }
             else {
               if (tmp != data['status']){
                  // retun in 2 seconds
-                console.log(tmp)
-                console.log("re run in 2 seconds")
                 tmp = data['status'];
                 console.log(data['current'])
-                var geojsonObject = data['current'];
-                var vectorSource = new ol.source.Vector({
-                features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
-                 });
+                
+                if (data['current'] != 'raster'){
+                  var geojsonObject = data['current'];
+                  var vectorSource = new ol.source.Vector({
+                      features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+                  });
+                  
+                  var vectorLayer = new ol.layer.Vector({
+                      source: vectorSource,
+                      style: styleFunction
+                  });
+                  map.addLayer(vectorLayer);
+                }
+                else{
+                  var extent = [838405.962, 6684208.676, 1017845.334, 6863745.147];
+                  var ovProj = ol.proj.get('EPSG:3857');
 
-                var vectorLayer = new ol.layer.Vector({
-                source: vectorSource,
-                style: styleFunction
-                });
-                map.addLayer(vectorLayer);
+                  var rasterLayer = new ol.layer.Image({
+                      source: new ol.source.ImageStatic({
+                          url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/rgb.jpg',
+                          imageSize:[1848, 1849],
+                          projection: ovProj,
+                          imageExtent: extent
+                      })
+                  });
+                          
+                  map.addLayer(rasterLayer);
+                  map.addOverlay(marker); 
+                }  
               }
               else{
               }
               setTimeout(function(){
               update_progress(status_url);
-              }, 1000);
+              }, 300);
             }
             
           });
