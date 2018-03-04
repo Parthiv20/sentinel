@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import statistics as stats
 
-
+from osgeo import gdal
 from osgeo import ogr
 from osgeo import osr
 from flask import Flask, request, render_template, session, flash, redirect, url_for, jsonify
@@ -25,6 +25,7 @@ from celery import Celery
 from flask import session
 from subprocess import Popen, PIPE, CalledProcessError
 from geojson import Polygon
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'top-secret!'
@@ -106,7 +107,7 @@ def long_task(self):
 
     subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-scale", "rgb.vrt", "rgb.jpg"])
 
-    self.update_state(state='PROGRESS', meta={'current': 'raster', 'type': 'raster', 'status': 'This second step shortlisting images'})
+    self.update_state(state='PROGRESS', meta={'current': 'raster', 'total': [838405.962, 6684208.676, 1017845.334, 6863745.147], 'status':'rgb.jpg' })
     time.sleep(1)
 
     # self.update_state(state='PROGRESS', meta={'current': poly2, 'total': 'stpes6', 'status': 'This second step merging all bands for image'})
@@ -215,76 +216,139 @@ def long_task(self):
     # test for small size updates
     i = 0
     crop_path = '/mnt/c/Users/pgulla/Desktop/thesis/openeo/crop_test/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA'
-    # p = Popen(['inotifywait', '-m', '-r', '-e', 'create', './'], stdout=PIPE, bufsize=1, universal_newlines=True)
-    with Popen(['inotifywait', '-m', '-r', './'], stdout=PIPE, bufsize=1, universal_newlines=True) as p:
-        subprocess.Popen([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
-        subprocess.Popen(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
-        subprocess.Popen(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
-        subprocess.Popen(["rm", "data.txt"])
-        subprocess.Popen(["rm", "rgb.vrt"])
-        for line in p.stdout:
-            #print(str(i)+line, end='') # process line here
-            self.update_state(state='PROGRESS', meta={'current': str(geoj_list.pop(random.randrange(len(geoj_list)))), 'type': 'vector', 'status': 'This is'+str(i)+'th step'})
-            i +=1
-            print(str(i)+line)
-            time.sleep(0.800)
-            if i == 101:
-            # to get 100 grids add aditional 3 steps here
-                break
-        p.kill()
-
-        subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-expand", "rgb", "-scale", "cloud.img", "rgb.jpg"])
+    
+    #################################************************************backup for grid visuvalisation*******************************####################
+    # # p = Popen(['inotifywait', '-m', '-r', '-e', 'create', './'], stdout=PIPE, bufsize=1, universal_newlines=True)
+    # with Popen(['inotifywait', '-m', '-r', './'], stdout=PIPE, bufsize=1, universal_newlines=True) as p:
+    #     subprocess.Popen([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])     
+    #     subprocess.Popen(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
+    #     subprocess.Popen(["fmask_sentinel2Stacked.py", "-a", "allbands.vrt", "-z", "angles.img", "-o", "cloud.img"])
+    #     subprocess.Popen(["rm", "data.txt"])
+    #     subprocess.Popen(["rm", "rgb.vrt"])
+    #     for line in p.stdout:
+    #         #print(str(i)+line, end='') # process line here
+    #         self.update_state(state='PROGRESS', meta={'current': str(geoj_list.pop(random.randrange(len(geoj_list)))), 'type': 'vector', 'status': 'This is'+str(i)+'th step'})
+    #         i +=1
+    #         print(str(i)+line)
+    #         time.sleep(0.800)
+    #         if i == 101:
+    #         # to get 100 grids add aditional 3 steps here
+    #             break
+    #   p.kill()
+    #   subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-expand", "rgb", "-scale", "cloud.img", "rgb.jpg"])
         
-        self.update_state(state='PROGRESS', meta={'current': 'raster', 'type': 'raster', 'status': 'This is last step shortlisting images'})
+    #   self.update_state(state='PROGRESS', meta={'current': 'raster', 'type': 'raster', 'status': 'This is last step shortlisting images'})
+    #   time.sleep(10)
+    #################################************************************backup for grid visuvalisation*******************************####################
+
+    subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B01.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B05.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B06.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B07.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B08.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B8A.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B09.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B10.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B11.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B12.jp2"])
+
+    subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/MTD_TL.xml", "-o", "angles.img"])
+
+    ds = gdal.Open('allbands.vrt')
+
+    x = ds.RasterXSize
+
+    y = ds.RasterYSize
+
+    ds = None
+
+    # TODO:update here for user specified grid size
+    x_arr = np.linspace(0, x, 5, endpoint=False).tolist()
+    y_arr = np.linspace(0, y, 5, endpoint=False).tolist()
+
+    xy_cartesian = list(itertools.product(x_arr, y_arr))
+
+    # TODO:update here for user specified grid size
+    x_step = x/5
+    y_step = y/5
+
+    cloud_pixels = 0
+
+    j=0
+    random.shuffle(xy_cartesian)
+    for i in xy_cartesian:
+        j += 1
+        subprocess.call(['gdal_translate', '-srcwin', str(i[0]), str(i[1]), str(x_step), str(y_step), 'allbands.vrt', 'rast'+str(j)+'.tif' ])
+        subprocess.call(['fmask_sentinel2Stacked.py', '-a', 'rast'+str(j)+'.tif', '-z', 'angles.img', '-o', 'cloud'+str(j)+'.img'])
+        subprocess.call(['rm', 'rast'+str(j)+'.tif'])
+        subprocess.call(['gdal_translate', '-of', 'JPEG', '-ot', 'Byte', '-expand', 'rgb', '-scale', 'cloud'+str(j)+'.img', 'cloud'+str(j)+'.jpg'])
+        img_info = json.loads(subprocess.check_output(['gdalinfo', "-json", 'cloud'+str(j)+'.img']).decode("utf-8"))
+        grid_cloud_pixels = img_info["rat"]["row"][2]["f"][0]
+        grid_extent = img_info['wgs84Extent']['coordinates'][0]
+        grid_extent_x = [item[0] for item in grid_extent]
+        grid_extent_y = [item[1] for item in grid_extent]
+        grid_x_min = min(grid_extent_x)
+        grid_y_min = min(grid_extent_y)
+        grid_x_max = max(grid_extent_x)
+        grid_y_max = max(grid_extent_y)
+        # trasnforming extent to EPSG:3857 transfrom is coming from above
+        point = ogr.Geometry(ogr.wkbPoint)
+        point.AddPoint(grid_x_min, grid_y_min)
+        point.Transform(transform)
+        grid_x_min = point.GetX()
+        grid_y_min = point.GetY()
+        point.AddPoint(grid_x_max, grid_y_max)
+        point.Transform(transform)
+        grid_x_max = point.GetX()
+        grid_y_max = point.GetY()
+        grid_extent = [grid_x_min, grid_y_min, grid_x_max, grid_y_max]
+        cloud_pixels += grid_cloud_pixels
+        subprocess.call(['rm', 'cloud'+str(j)+'.jpg.aux.xml'])
+        subprocess.call(['rm', 'cloud'+str(j)+'.img'])
+        subprocess.call(['rm', 'cloud'+str(j)+'.img.aux.xml'])
+
+        # TODO: update total to name.
+        self.update_state(state='PROGRESS', meta={'current': 'raster', 'total':grid_extent, 'status': 'cloud'+str(j)+'.jpg' })
         time.sleep(10)
 
         
-        # Creating final result image.
-        objects = ('2017-05-05', '2017-06-05', '2017-07-05', '2017-08-05', '2017-09-05', '2017-10-05', '2017-11-05', '2017-12-05')
-        y_pos = np.arange(len(objects))
-        cloud_percent = [30, 10, 20, 16, 18, 50, 38, 28]
+        # # Creating final result image.
+        # objects = ('2017-05-05', '2017-06-05', '2017-07-05', '2017-08-05', '2017-09-05', '2017-10-05', '2017-11-05', '2017-12-05')
+        # y_pos = np.arange(len(objects))
+        # cloud_percent = [30, 10, 20, 16, 18, 50, 38, 28]
  
-        barlist = plt.bar(y_pos, cloud_percent, align='center', alpha=0.5)
+        # barlist = plt.bar(y_pos, cloud_percent, align='center', alpha=0.5)
 
-        for i in barlist:
-            if i.get_height() >=25:
-                i.set_color('r')
-            else:
-                i.set_color('g')
-        
-        
-        #     if i.get_height() > 25:
+        # for i in barlist:
+        #     if i.get_height() >=25:
         #         i.set_color('r')
-        # else:
-        #     i.set_color('g')
+        #     else:
+        #         i.set_color('g')
+        
+        
+        # #     if i.get_height() > 25:
+        # #         i.set_color('r')
+        # # else:
+        # #     i.set_color('g')
 
-        plt.xticks(y_pos, objects, rotation=45)
-        plt.ylabel('% of cloud cover')
-        plt.xlabel('Image acquition dates')
-        plt.title('Sentinel 2A images cloud cover')
+        # plt.xticks(y_pos, objects, rotation=45)
+        # plt.ylabel('% of cloud cover')
+        # plt.xlabel('Image acquition dates')
+        # plt.title('Sentinel 2A images cloud cover')
 
-        x = stats.mean(cloud_percent)
-        y = stats.median(cloud_percent)
-        a = stats.stdev(cloud_percent)
-        b = stats.variance(cloud_percent)
-
-
-        # cloud_stats = """mean     :"""+format(x, '.2f')+"""
-        # median  :"""+format(y, '.2f')+"""
-        # stdev     :"""+format(a, '.2f')+"""
-        # variance:"""+format(b, '.2f')+""" """
-
-
-        cloud_stats = 'mean     :'+format(x, '.2f')+os.linesep+'median  :'+format(y, '.2f')+os.linesep+'stdev     :'+format(a, '.2f')+os.linesep+'variance:'+format(b, '.2f')
+        # x = stats.mean(cloud_percent)
+        # y = stats.median(cloud_percent)
+        # a = stats.stdev(cloud_percent)
+        # b = stats.variance(cloud_percent)
 
 
-        plt.axhline(y=25, color='b', linestyle='-')
+        # # cloud_stats = """mean     :"""+format(x, '.2f')+"""
+        # # median  :"""+format(y, '.2f')+"""
+        # # stdev     :"""+format(a, '.2f')+"""
+        # # variance:"""+format(b, '.2f')+""" """
 
-        plt.text(len(cloud_percent),(max(cloud_percent))*0.4,cloud_stats, fontsize=20)
+
+        # cloud_stats = 'mean     :'+format(x, '.2f')+os.linesep+'median  :'+format(y, '.2f')+os.linesep+'stdev     :'+format(a, '.2f')+os.linesep+'variance:'+format(b, '.2f')
+
+
+        # plt.axhline(y=25, color='b', linestyle='-')
+
+        # plt.text(len(cloud_percent),(max(cloud_percent))*0.4,cloud_stats, fontsize=20)
  
-        plt.savefig('cloud.png', bbox_inches="tight")
+        # plt.savefig('cloud.png', bbox_inches="tight")
 
-        #subprocess.call(["convert", "bar_chart.png", "cloud.jpg"])
+        # #subprocess.call(["convert", "bar_chart.png", "cloud.jpg"])
        
 
     return {'current': img_geojson, 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
