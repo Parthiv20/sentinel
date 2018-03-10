@@ -84,7 +84,7 @@ def long_task(self):
 
     img_poly = '{ "type": "Polygon", "coordinates": [ [ [ 838405.962330951588228, 6862082.408005863428116, 0.0 ], [ 1017826.472330141579732, 6863729.436798275448382, 0.0 ], [ 1017481.162819475051947, 6685785.296250037848949, 0.0 ], [ 841943.274732842110097, 6684229.797995020635426, 0.0 ], [ 838405.962330951588228, 6862082.408005863428116, 0.0 ] ] ] }'
 
-    poly1 = '{ "type": "Polygon", "coordinates":'+str(in_dict['extent'])+'}'
+    poly1 = '{ "type": "Polygon", "coordinates":'+str(in_dict['bbox'])+'}'
 
     # poly2 = '{ "type": "MultiPolygon", "coordinates":['+str(poly2_extent)+']}'
 
@@ -254,14 +254,14 @@ def long_task(self):
     ds = None
 
     # TODO:update here for user specified grid size
-    x_arr = np.linspace(0, x, 2, endpoint=False).tolist()
-    y_arr = np.linspace(0, y, 2, endpoint=False).tolist()
+    x_arr = np.linspace(0, x, 3, endpoint=False).tolist()
+    y_arr = np.linspace(0, y, 3, endpoint=False).tolist()
 
     xy_cartesian = list(itertools.product(x_arr, y_arr))
 
     # TODO:update here for user specified grid size
-    x_step = x/2
-    y_step = y/2
+    x_step = x/3
+    y_step = y/3
 
     cloud_pixels = 0
 

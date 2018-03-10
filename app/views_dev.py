@@ -42,23 +42,40 @@ celery.conf.update(app.config)
 
 
 @celery.task(bind=True)
-def long_task(self):    
+def long_task(self):
 
-    with open('in_dict.txt') as f:
+    with open("in_dict.txt") as f:
         in_dict = json.load(f)
 
-    print(in_dict)
+    in_bbox ='{"type": "Polygon", "coordinates":'+str(in_dict['bbox'])+'}'
 
-    in_bbox = '{ "type": "Polygon", "coordinates":'+str(in_dict['bbox'])+'}'
+    sensor = in_dict['satellite']
 
-    self.update_state(state='PROGRESS', meta={'current': in_bbox, 'type': 'vector', 'status': 'This first step shortlisting images'})
+    self.update_state(state="PROGRESS", meta={"current": in_bbox, "type": "vector", "status": "This first step shortlisting images"})
     time.sleep(1)
 
-    # gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
+    gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
 
-    # gdal_translate = subprocess.check_output(["which", "gdal_translate"])[:-1].decode("utf-8")
+    gdal_translate = subprocess.check_output(["which", "gdal_translate"])[:-1].decode("utf-8")
 
-    # gdal_info = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
+    gdal_info = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
+
+    data_path = "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data"
+
+    f = open('sp_subset.txt', 'r')
+    sp_subset = f.readlines()
+
+    for img in sp_subset:
+        print(data_path+os.sep+sensor+os.sep+img)
+
+        img_xml_tree = etree.parse(data_path+os.sep+sensor+os.sep+img+os.sep+"MTD_MSIL1C.xml")
+        img_xml_root = img_xml_tree.getroot()
+
+        band_list = img_xml_root[0][0][11][0][0]
+
+        for band in band_list:
+            print(band.text)
+
 
     # subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "rgb.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2"])
 
