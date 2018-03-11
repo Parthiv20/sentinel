@@ -58,31 +58,67 @@ def long_task(self):
 
     gdal_translate = subprocess.check_output(["which", "gdal_translate"])[:-1].decode("utf-8")
 
-    gdal_info = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
+    gdalinfo = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
 
     data_path = "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data"
 
-    f = open('sp_subset.txt', 'r')
+    f = open("sp_subset.txt", "r")
     sp_subset = f.readlines()
 
     for img in sp_subset:
-        print(data_path+os.sep+sensor+os.sep+img)
 
-        img_xml_tree = etree.parse(data_path+os.sep+sensor+os.sep+img+os.sep+"MTD_MSIL1C.xml")
+        img_xml_tree = etree.parse(data_path+os.path.sep+sensor+os.path.sep+img[:-1]+os.path.sep+"MTD_MSIL1C.xml")
         img_xml_root = img_xml_tree.getroot()
 
         band_list = img_xml_root[0][0][11][0][0]
 
-        for band in band_list:
-            print(band.text)
+        band_path = data_path+os.path.sep+sensor+os.path.sep+img[:-1]+os.path.sep
 
 
-    # subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "rgb.vrt", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B02.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B03.jp2", "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/GRANULE/L1C_T32UMC_A010401_20170619T103021/IMG_DATA/T32UMC_20170619T103021_B04.jp2"])
+        sun_angle_path = (band_list[0].text).rsplit(os.path.sep, 2)[0]
 
-    # subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-scale", "rgb.vrt", "rgb.jpg"])
+        subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", band_path+band_list[0].text+".jp2", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2", band_path+band_list[4].text+".jp2", band_path+band_list[5].text+".jp2", band_path+band_list[6].text+".jp2", band_path+band_list[7].text+".jp2", band_path+band_list[8].text+".jp2", band_path+band_list[9].text+".jp2", band_path+band_list[10].text+".jp2", band_path+band_list[11].text+".jp2", band_path+band_list[12].text+".jp2"])
 
-    # self.update_state(state='PROGRESS', meta={'current': 'raster', 'total': [838405.962, 6684208.676, 1017845.334, 6863745.147], 'status':'rgb.jpg' })
-    # time.sleep(1)
+        subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", band_path+sun_angle_path+os.path.sep+"MTD_TL.xml", "-o", "angles.img"])
+
+
+        subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "rgb.vrt", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2"])
+
+        subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-scale", "rgb.vrt", "rgb.jpg"])
+
+        img_info = json.loads(subprocess.check_output([gdalinfo, "-json", "rgb.vrt"]).decode("utf-8"))
+
+        # # creating projection
+        img_srs = osr.SpatialReference()
+        img_srs.ImportFromEPSG(4326)
+
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(int(in_dict["srs"].rsplit(":")[1]))
+
+        transform = osr.CoordinateTransformation(img_srs, out_srs)  
+        
+        # getting image extent and transforming to 3857
+        grid_extent = img_info['wgs84Extent']['coordinates'][0]
+        grid_extent_x = [item[0] for item in grid_extent]
+        grid_extent_y = [item[1] for item in grid_extent]
+        grid_x_min = min(grid_extent_x)
+        grid_y_min = min(grid_extent_y)
+        grid_x_max = max(grid_extent_x)
+        grid_y_max = max(grid_extent_y)
+        
+        point = ogr.Geometry(ogr.wkbPoint)
+        point.AddPoint(grid_x_min, grid_y_min)
+        point.Transform(transform)
+        grid_x_min = point.GetX()
+        grid_y_min = point.GetY()
+        point.AddPoint(grid_x_max, grid_y_max)
+        point.Transform(transform)
+        grid_x_max = point.GetX()
+        grid_y_max = point.GetY()
+        grid_extent = [grid_x_min, grid_y_min, grid_x_max, grid_y_max]
+
+        self.update_state(state='PROGRESS', meta={'current': 'raster', 'total': grid_extent, 'status':'rgb.jpg' })
+        time.sleep(75)
 
     # # tiles creation for the image
     # img_xml_tree = etree.parse('/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/INSPIRE.xml')
@@ -462,7 +498,7 @@ def cloud_cover():
     thefile = open('sp_subset.txt', 'w')
 
     for img in sp_subset:
-        thefile.write("%s\n" % img)             
+        thefile.write("%s\n" % img)            
        
     task = long_task.apply_async()
     

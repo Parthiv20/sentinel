@@ -29,7 +29,7 @@
   <body>
     <div id="map" class="map"></div>
     <form id="time range">
-        enter the date range start date: <input type="date" id="start_date" value="2017-10-01">          end date: <input type="date" id="end_date" value="2017-11-11"> <br>
+        enter the date range start date: <input type="date" id="start_date" value="2017-01-01">          end date: <input type="date" id="end_date" value="2017-12-12"> <br>
         <!-- TODO: create drop down for sensor selection -->
         enter the sensor: <input type="text" id="sensor" value = "Sentinel2"> <br>
         enter the cloud detection algorithm: <input type="text" id="algorithm" value = "Fmask"> <br>
@@ -158,7 +158,7 @@
         var algorithm = document.getElementById("algorithm").value.toLowerCase();
         var cloud_percent = document.getElementById("cloud_percent").value;
         var in_srs =map.getView().getProjection().getCode(); 
-        var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs })
+        var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs});
 
         console.log(extent);
         console.log(bbox);
@@ -171,11 +171,12 @@
         // console.log(in_srs);
         // console.log(params);
 
-        var data = {'extent':extent, 'center':center};
+        var data = {bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs};
 
         $.ajax({
           type: 'POST',
-          url: "http://localhost:5000/longtask",
+          url: "http://localhost:5000/cloud-cover/fmask/sentinel2",
+          // url: "http://localhost:5000/longtask",
           data: JSON.stringify(data, null, '\t'),
           contentType: 'application/json;charset=UTF-8',
           success: function(data, status, request){
@@ -205,10 +206,10 @@
               vectorLayerArray.forEach(function(aVecLayer){
                 map.removeLayer(aVecLayer);
               })
-              var geojsonObject = data['current'];
-              var vectorSource = new ol.source.Vector({
-              features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
-              });
+              // var geojsonObject = data['current'];
+              // var vectorSource = new ol.source.Vector({
+              // features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+              // });
 
               var extent = [838405.962, 6684208.676, 1017845.334, 6863745.147];
                 
@@ -247,12 +248,20 @@
                   map.addLayer(vectorLayer);
                 }
                 else{
-                  var extent = [838405.962, 6684208.676, 1017845.334, 6863745.147];
+                  var grid_name = data['status']
+                  // var extent = [838405.962, 6684208.676, 1017845.334, 6863745.147];
+
+                  var extent = data['total']
+
+
                   var ovProj = ol.proj.get('EPSG:3857');
+
+                  console.log(grid_name)
+                  console.log(extent)
 
                   var rasterLayer = new ol.layer.Image({
                       source: new ol.source.ImageStatic({
-                          url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/rgb.jpg',
+                          url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/'+grid_name,
                           imageSize:[1848, 1849],
                           projection: ovProj,
                           imageExtent: extent
