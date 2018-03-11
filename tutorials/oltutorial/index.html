@@ -193,9 +193,9 @@
 
         function update_progress(status_url){
           $.getJSON(status_url, function(data){
-            if (data['status'] === "PROCESSED"){
+            if (data['result']){
               console.log(data);
-              console.log(data['current'])
+              console.log(data['result'])
 
               var vectorLayerArray = new Array();
               map.getLayers().getArray().some(function(layer,i,array){
@@ -226,43 +226,39 @@
 
               map.removeOverlay(marker);          
               map.addLayer(rasterLayer);
-               
 
             }
             else {
-              if (tmp != data['status']){
+              if (tmp != data['name']){
                  // retun in 2 seconds
-                tmp = data['status'];
-                console.log(data['current'])
-                
-                if (data['current'] != 'raster'){
-                  var geojsonObject = data['current'];
+                tmp = data['name'];
+                                
+                if (data['type'] == 'vector'){
+                  var geojsonObject = data['extent'];
                   var vectorSource = new ol.source.Vector({
                       features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
                   });
-                  
                   var vectorLayer = new ol.layer.Vector({
                       source: vectorSource,
                       style: styleFunction
                   });
                   map.addLayer(vectorLayer);
                 }
-                else{
-                  var grid_name = data['status']
-                  // var extent = [838405.962, 6684208.676, 1017845.334, 6863745.147];
-
-                  var extent = data['total']
-
+                else if (data['type'] == 'raster'){
+                  var img_name = data['name']
+                  
+                  var extent = data['extent']
 
                   var ovProj = ol.proj.get('EPSG:3857');
 
-                  console.log(grid_name)
-                  console.log(extent)
+                  var image_size = data['image_size']
+
+                  console.log(image_size)
 
                   var rasterLayer = new ol.layer.Image({
                       source: new ol.source.ImageStatic({
-                          url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/'+grid_name,
-                          imageSize:[1848, 1849],
+                          url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/'+img_name,
+                          imageSize:image_size,
                           projection: ovProj,
                           imageExtent: extent
                       })

@@ -51,8 +51,7 @@ def long_task(self):
 
     sensor = in_dict['satellite']
 
-    self.update_state(state="PROGRESS", meta={"current": in_bbox, "type": "vector", "status": "This first step shortlisting images"})
-    time.sleep(1)
+    self.update_state(state="PROGRESS", meta={"extent": in_bbox, "type": "vector" })
 
     gdalbuildvrt = subprocess.check_output(["which", "gdalbuildvrt"])[:-1].decode("utf-8")
 
@@ -65,8 +64,10 @@ def long_task(self):
     f = open("sp_subset.txt", "r")
     sp_subset = f.readlines()
 
-    for img in sp_subset:
 
+    for img in sp_subset:
+        
+        
         img_xml_tree = etree.parse(data_path+os.path.sep+sensor+os.path.sep+img[:-1]+os.path.sep+"MTD_MSIL1C.xml")
         img_xml_root = img_xml_tree.getroot()
 
@@ -77,16 +78,18 @@ def long_task(self):
 
         sun_angle_path = (band_list[0].text).rsplit(os.path.sep, 2)[0]
 
-        subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "allbands.vrt", band_path+band_list[0].text+".jp2", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2", band_path+band_list[4].text+".jp2", band_path+band_list[5].text+".jp2", band_path+band_list[6].text+".jp2", band_path+band_list[7].text+".jp2", band_path+band_list[8].text+".jp2", band_path+band_list[9].text+".jp2", band_path+band_list[10].text+".jp2", band_path+band_list[11].text+".jp2", band_path+band_list[12].text+".jp2"])
+        subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", img[:-6]+"_allbands.vrt", band_path+band_list[0].text+".jp2", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2", band_path+band_list[4].text+".jp2", band_path+band_list[5].text+".jp2", band_path+band_list[6].text+".jp2", band_path+band_list[7].text+".jp2", band_path+band_list[8].text+".jp2", band_path+band_list[9].text+".jp2", band_path+band_list[10].text+".jp2", band_path+band_list[11].text+".jp2", band_path+band_list[12].text+".jp2"])
 
-        subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", band_path+sun_angle_path+os.path.sep+"MTD_TL.xml", "-o", "angles.img"])
+        subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", band_path+sun_angle_path+os.path.sep+"MTD_TL.xml", "-o", img[:-6]+"_angles.img"])
 
 
-        subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", "rgb.vrt", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2"])
+        subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", img[:-6]+"_rgb.vrt", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2"])
 
-        subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-scale", "rgb.vrt", "rgb.jpg"])
+        subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-scale", img[:-6]+"_rgb.vrt", img[:-6]+"_rgb.jpg"])
 
-        img_info = json.loads(subprocess.check_output([gdalinfo, "-json", "rgb.vrt"]).decode("utf-8"))
+        img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img[:-6]+"_rgb.vrt"]).decode("utf-8"))
+
+        size = img_info['size']
 
         # # creating projection
         img_srs = osr.SpatialReference()
@@ -117,8 +120,8 @@ def long_task(self):
         grid_y_max = point.GetY()
         grid_extent = [grid_x_min, grid_y_min, grid_x_max, grid_y_max]
 
-        self.update_state(state='PROGRESS', meta={'current': 'raster', 'total': grid_extent, 'status':'rgb.jpg' })
-        time.sleep(75)
+        self.update_state(state='PROGRESS', meta={'type': 'raster', 'extent': grid_extent, 'name':img[:-6]+'_rgb.jpg', 'image_size': size })
+        time.sleep(20)
 
     # # tiles creation for the image
     # img_xml_tree = etree.parse('/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data/sentinel2/S2A_MSIL1C_20170619T103021_N0205_R108_T32UMC_20170619T103021.SAFE/INSPIRE.xml')
@@ -360,9 +363,10 @@ def taskstatus(task_id):
     elif task.state != 'FAILURE':
         response = {
             'state': task.state,
-            'current': task.info.get('current', 0),
-            'total': task.info.get('total', 1),
-            'status': task.info.get('status', '')
+            'extent': task.info.get('extent', ''),
+            'type': task.info.get('type', ''),
+            'name': task.info.get('name', ''),
+            'image_size' : task.info.get('image_size', '')
         }
         if 'result' in task.info:
             response['result'] = task.info['result']
