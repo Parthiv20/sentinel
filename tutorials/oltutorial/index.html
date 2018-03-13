@@ -14,9 +14,9 @@
         background-color: rgba(255,255,255,0.4);
         border-color: rgb(245, 53, 47);
       }
-      #vienna {
+        #status_message {
         text-decoration: none;
-        color:red;
+        color:yellow;
         font-size: 16pt;
         font-weight: bold;
         /* text-shadow: black 0.1em 0.1em 0.2em; */
@@ -37,9 +37,9 @@
     </form> 
     
     <!-- Clickable label for Vienna -->
-    <p class="overlay" id="vienna" target="_blank" href="http://en.wikipedia.org/wiki/Vienna"><span style='color:rgb(0, 60, 255);'>2017-05-05</span>, <span style='color:rgb(0, 60, 255);'>2017-06-05</span>, <span style='color:yellow;'>2017-08-05</span>, 2017-11-05, 2017-12-05</p>
-               
-        
+    <!-- <p id="time_range"><span style='color:rgb(0, 60, 255);'>2017-05-05</span>, <span style='color:rgb(0, 60, 255);'>2017-06-05</span>, <span style='color:yellow;'>2017-08-05</span>, 2017-11-05, 2017-12-05</p> -->
+    
+    <p id="status_message"></p>        
       
     <script>
 
@@ -66,28 +66,7 @@
           fil: new ol.style.Fill({color: '#000'}),
           stroke: new ol.style.Stroke({
             color: '#FF0', width:2
-          }),
-          text: "Spatio-Temporal Short-listing of Images"
-        })
-      })
-    }
-
-    var myStyle = {
-      'Polygon': new ol.style.Style({
-        stroke: new ol.style.Stroke({
-          color:'green',
-          width:1
-        }),
-        fill: new ol.style.Fill({
-          color: 'rgba(0, 0, 0, 1)'
-        }),
-        text: new ol.style.Text({
-          font: '16px Calibri, sans-serif',
-          fil: new ol.style.Fill({color: '#000'}),
-          stroke: new ol.style.Stroke({
-            color: '#FFF', width:2
-          }),
-          text: "Spatio-temporal short listing of images"
+          }),          
         })
       })
     }
@@ -95,13 +74,6 @@
     var styleFunction = function(feature){
       return styles[feature.getGeometry().getType()];
     };
-
-    var myStyleFunction = function(feature){
-      return myStyle[feature.getGeometry().getType()];
-    }
-
-
-
 
       var map = new ol.Map({
         layers: [
@@ -125,19 +97,13 @@
       map.addInteraction(select);
 
 
+      // var pos = [838405.962, 6863745.147];
 
-      // testing text box
-      var pos = [838405.962, 6863745.147];
-
-      // Vienna marker
-      var marker = new ol.Overlay({
-          position: pos,
-          positioning: 'bottom-left',
-          element: document.getElementById('vienna'),
-          stopEvent: false
+      // time_range marker
+      var mesg = new ol.Overlay({
+      positioning: 'bottom-left',
+      stopEvent: false
       });
-      
-      
 
 
       // a DragBox interaction used to select features by drawing boxes
@@ -173,6 +139,9 @@
 
         var data = {bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs};
 
+        // For displying dates in different colors
+        var i = 0;
+
         $.ajax({
           type: 'POST',
           url: "http://localhost:5000/cloud-cover/fmask/sentinel2",
@@ -189,7 +158,8 @@
           }
         })
 
-        var tmp
+        // For checking name change condition - raster, vecotr
+        var tmp;
 
         function update_progress(status_url){
           $.getJSON(status_url, function(data){
@@ -224,7 +194,7 @@
                   })
               });
 
-              map.removeOverlay(marker);          
+              map.removeOverlay(mesg);          
               map.addLayer(rasterLayer);
 
             }
@@ -234,6 +204,7 @@
                 tmp = data['name'];
                                 
                 if (data['type'] == 'vector'){
+
                   var geojsonObject = data['extent'];
                   var vectorSource = new ol.source.Vector({
                       features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
@@ -242,9 +213,25 @@
                       source: vectorSource,
                       style: styleFunction
                   });
+
+
+                  var extentPoly = JSON.parse(data['extent']);
+                  var extentObject = extentPoly['coordinates'];
+                  extentArray = extentObject[Object.keys(extentObject)[0]];
+                  console.log(data['extent'])
+                  var pos = Object.values(extentArray)[0]
+                  console.log(pos)
+
+                  document.getElementById('status_message').innerHTML=" Spatio-Temporal Short listing of Images";
+                  mesg.setElement(document.getElementById('status_message'));
+                  mesg.setPosition(pos)
+
                   map.addLayer(vectorLayer);
+                  map.addOverlay(mesg);
+
                 }
                 else if (data['type'] == 'raster'){
+
                   var img_name = data['name']
                   
                   var extent = data['extent']
@@ -252,8 +239,6 @@
                   var ovProj = ol.proj.get('EPSG:3857');
 
                   var image_size = data['image_size']
-
-                  console.log(image_size)
 
                   var rasterLayer = new ol.layer.Image({
                       source: new ol.source.ImageStatic({
@@ -263,16 +248,33 @@
                           imageExtent: extent
                       })
                   });
-                          
+                  console.log(data['image_dates'].join(", "));
+                  var image_dates = data['image_dates'].join(", ");
+                  var image_dates = image_dates.slice(0, i).fontcolor("blue")+image_dates.slice(i, i+11).fontcolor("red")+image_dates.slice(i+11,).fontcolor("white")
+
+                  var element = mesg.getElement();
+                  element.innerHTML = image_dates
+                  map.removeOverlay(mesg)
+
+                  // time_range postion
+                  var pos = mesg.getPosition();
+                  mesg.setPosition([extent[0], extent[3]])
+                  console.log(extent)
+
+                  // document.getElementById('time_range').innerHTML="Time range will be displayed here";
+
+                  mesg.setElement(element)
+
                   map.addLayer(rasterLayer);
-                  map.addOverlay(marker); 
+                  map.addOverlay(mesg);
+                  i +=11;
                 }  
               }
               else{
               }
               setTimeout(function(){
               update_progress(status_url);
-              }, 300);
+              }, 1000);
             }
             
           });
