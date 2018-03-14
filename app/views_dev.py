@@ -49,6 +49,19 @@ def long_task(self):
 
     in_bbox ='{"type": "Polygon", "coordinates":'+str(in_dict['bbox'])+'}'
 
+    f = open("sp_subset.txt", "r")
+    sp_subset = f.readlines()
+
+    if len(sp_subset) == 0:
+        self.update_state(state="PROGRESS", meta={"extent": in_bbox, "type": "no_data"})
+
+        time.sleep(5)
+
+        subprocess.call("rm *.vrt *.tif *.jpg *.xml *.img *.txt", shell=True)
+        
+        return {'current': 'bleek', 'type': 'no_data', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
+
+
     self.update_state(state="PROGRESS", meta={"extent": in_bbox, "type": "vector"})
 
     sensor = in_dict['satellite']
@@ -60,9 +73,6 @@ def long_task(self):
     gdalinfo = subprocess.check_output(["which", "gdalinfo"])[:-1].decode("utf-8")
 
     data_path = "/mnt/c/Users/pgulla/Desktop/thesis/openeo/webapp/data"
-
-    f = open("sp_subset.txt", "r")
-    sp_subset = f.readlines()
 
 
     f = open("image_dates.txt", "r")
@@ -159,94 +169,93 @@ def long_task(self):
         # to process grids randomly
         random.shuffle(xy_cartesian)
 
-        # for i in xy_cartesian:
-        #     j += 1
-        #     subprocess.call([gdal_translate, "-srcwin", str(i[0]), str(i[1]), str(x_step), str(y_step), img[:-6]+"_allbands.vrt", img[:-6]+"_rast"+str(j)+".tif" ])
-        #     subprocess.call(["fmask_sentinel2Stacked.py", "-a", img[:-6]+"_rast"+str(j)+".tif", "-z", img[:-6]+"_angles.img", "-o", img[:-6]+"_cloud"+str(j)+".img"])
+        for i in xy_cartesian:
+            j += 1
+            subprocess.call([gdal_translate, "-srcwin", str(i[0]), str(i[1]), str(x_step), str(y_step), img[:-6]+"_allbands.vrt", img[:-6]+"_rast"+str(j)+".tif" ])
+            subprocess.call(["fmask_sentinel2Stacked.py", "-a", img[:-6]+"_rast"+str(j)+".tif", "-z", img[:-6]+"_angles.img", "-o", img[:-6]+"_cloud"+str(j)+".img"])
             
-        #     subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-expand", "rgb", "-scale", img[:-6]+"_cloud"+str(j)+".img", img[:-6]+"_cloud"+str(j)+".jpg"])
+            subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-expand", "rgb", "-scale", img[:-6]+"_cloud"+str(j)+".img", img[:-6]+"_cloud"+str(j)+".jpg"])
             
-        #     img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img[:-6]+"_cloud"+str(j)+".img"]).decode("utf-8"))
+            img_info = json.loads(subprocess.check_output([gdalinfo, "-json", img[:-6]+"_cloud"+str(j)+".img"]).decode("utf-8"))
             
-        #     grid_size = img_info['size']
+            grid_size = img_info['size']
             
-        #     grid_cloud_pixels = img_info["rat"]["row"][2]["f"][0]
-        #     grid_extent = img_info['wgs84Extent']['coordinates'][0]
-        #     grid_extent_x = [item[0] for item in grid_extent]
-        #     grid_extent_y = [item[1] for item in grid_extent]
-        #     grid_x_min = min(grid_extent_x)
-        #     grid_y_min = min(grid_extent_y)
-        #     grid_x_max = max(grid_extent_x)
-        #     grid_y_max = max(grid_extent_y)
+            grid_cloud_pixels = img_info["rat"]["row"][2]["f"][0]
+            grid_extent = img_info['wgs84Extent']['coordinates'][0]
+            grid_extent_x = [item[0] for item in grid_extent]
+            grid_extent_y = [item[1] for item in grid_extent]
+            grid_x_min = min(grid_extent_x)
+            grid_y_min = min(grid_extent_y)
+            grid_x_max = max(grid_extent_x)
+            grid_y_max = max(grid_extent_y)
             
-        #     # trasnforming extent to EPSG:3857 transfrom is coming from above
-        #     point = ogr.Geometry(ogr.wkbPoint)
-        #     point.AddPoint(grid_x_min, grid_y_min)
-        #     point.Transform(transform)
-        #     grid_x_min = point.GetX()
-        #     grid_y_min = point.GetY()
-        #     point.AddPoint(grid_x_max, grid_y_max)
-        #     point.Transform(transform)
-        #     grid_x_max = point.GetX()
-        #     grid_y_max = point.GetY()
-        #     grid_extent = [grid_x_min, grid_y_min, grid_x_max, grid_y_max]
-        #     cloud_pixels += grid_cloud_pixels
+            # trasnforming extent to EPSG:3857 transfrom is coming from above
+            point = ogr.Geometry(ogr.wkbPoint)
+            point.AddPoint(grid_x_min, grid_y_min)
+            point.Transform(transform)
+            grid_x_min = point.GetX()
+            grid_y_min = point.GetY()
+            point.AddPoint(grid_x_max, grid_y_max)
+            point.Transform(transform)
+            grid_x_max = point.GetX()
+            grid_y_max = point.GetY()
+            grid_extent = [grid_x_min, grid_y_min, grid_x_max, grid_y_max]
+            cloud_pixels += grid_cloud_pixels
             
-        #     self.update_state(state='PROGRESS', meta={'type': 'raster', 'extent':grid_extent, 'name': img[:-6]+"_cloud"+str(j)+'.jpg', 'image_size': grid_size })
+            self.update_state(state='PROGRESS', meta={'type': 'raster', 'extent':grid_extent, 'name': img[:-6]+"_cloud"+str(j)+'.jpg', 'image_size': grid_size, 'image_dates': '' })
         
-        # img_cloud_percent = cloud_pixels/img_pixels
+        img_cloud_percent = cloud_pixels/img_pixels
 
-        # cloud_percent.append(img_cloud_percent)
+        cloud_percent.append(img_cloud_percent)
 
-    # # Creating final result image.
-    # # image_dates coming from above.
+    time.sleep(2)
+    
+    
+    # Creating final result image.
+    # image_dates coming from above.
     # image_dates.append("2018-01-01")
     # image_dates.append("2018-02-02")
     # image_dates.append("2018-03-03")
 
-    # y_pos = np.arange(len(image_dates))
+    y_pos = np.arange(len(image_dates))
     
     # cloud_percent.append(40)
     # cloud_percent.append(15)
     # cloud_percent.append(50)
  
-    # barlist = plt.bar(y_pos, cloud_percent, align='center', alpha=0.5)
+    barlist = plt.bar(y_pos, cloud_percent, align='center', alpha=0.5)
 
-    # for i in barlist:
-    #     if i.get_height() >=25:
-    #         i.set_color('r')
-    #     else:
-    #         i.set_color('g')
+    for i in barlist:
+        if i.get_height() >=25:
+            i.set_color('r')
+        else:
+            i.set_color('g')
         
-    # plt.xticks(y_pos, image_dates, rotation=45)
-    # plt.ylabel('% of cloud cover')
-    # plt.xlabel('Image acquition dates')
-    # plt.title('Sentinel 2A images cloud cover')
-    # x = stats.mean(cloud_percent)
-    # y = stats.median(cloud_percent)
-    # a = stats.stdev(cloud_percent)
-    # b = stats.variance(cloud_percent)
+    plt.xticks(y_pos, image_dates, rotation=45)
+    plt.ylabel('% of cloud cover')
+    plt.xlabel('Image acquition dates')
+    plt.title('Sentinel 2A images cloud cover')
+    x = stats.mean(cloud_percent)
+    y = stats.median(cloud_percent)
+    a = stats.stdev(cloud_percent)
+    b = stats.variance(cloud_percent)
 
-    # cloud_stats="""    mean     :"""+format(x, '.2f')+"""
-    # median  :"""+format(y, '.2f')+"""
-    # stdev     :"""+format(a, '.2f')+"""
-    # variance:"""+format(b, '.2f')+""" """
+    cloud_stats="""    mean     :"""+format(x, '.2f')+"""
+    median  :"""+format(y, '.2f')+"""
+    stdev     :"""+format(a, '.2f')+"""
+    variance:"""+format(b, '.2f')+""" """
 
 
-    # plt.axhline(y=25, color='b', linestyle='-')
+    plt.axhline(y=25, color='b', linestyle='-')
 
-    # plt.text(len(cloud_percent),(max(cloud_percent))*0.4,cloud_stats, fontsize=20)
+    plt.text(len(cloud_percent),(max(cloud_percent))*0.4,cloud_stats, fontsize=20)
  
-    # plt.savefig('cloud.png', bbox_inches="tight")
+    plt.savefig('result.pdf', bbox_inches="tight")
 
-    # subprocess.call(["convert", "bar_chart.png", "cloud.jpg"])
-       
-    # time.sleep(2)
-
-    # subprocess.call("rm *.vrt *.tif *.jpg *.xml *.img *.txt", shell=True)
+    subprocess.call("rm *.vrt *.tif *.jpg *.xml *.img *.txt", shell=True)
 
     # udatate status content
-    return {'current': 'bleek', 'total': 'steps6', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
+    return {'current': 'bleek', 'type': 'raster', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
 
 
 
