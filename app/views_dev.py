@@ -25,6 +25,12 @@ from subprocess import Popen, PIPE, CalledProcessError
 from geojson import Polygon
 
 
+
+#TODO: update cloud percent calculation for half images. images having black patches.
+
+
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'top-secret!'
 
@@ -115,6 +121,9 @@ def long_task(self):
 
         img_size = img_info['size']
 
+        # used to calculate cloud percent
+        img_pixels = img_size[0] * img_size[1]
+
         # # creating projection
         img_srs = osr.SpatialReference()
         img_srs.ImportFromEPSG(4326)
@@ -153,9 +162,6 @@ def long_task(self):
 
         x = ds.RasterXSize
         y = ds.RasterYSize
-
-        # used to calculate cloud percent
-        img_pixels = x*y
 
         ds = None
 
@@ -214,9 +220,11 @@ def long_task(self):
             
             self.update_state(state='PROGRESS', meta={'type': 'raster', 'extent':grid_extent, 'name': img[:-6]+"_cloud"+str(j)+'.jpg', 'image_size': grid_size, 'image_dates': '' })
         
-        img_cloud_percent = cloud_pixels/img_pixels
+
+        img_cloud_percent = (cloud_pixels/img_pixels)*100
 
         cloud_percent.append(img_cloud_percent)
+
 
     time.sleep(2)
     
