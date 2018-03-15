@@ -1,5 +1,3 @@
-# from app import app
-
 
 import subprocess
 import json
@@ -44,22 +42,25 @@ celery.conf.update(app.config)
 @celery.task(bind=True)
 def long_task(self):
 
+    # User sent inputs are stored in in_dict.txt
     with open("in_dict.txt") as f:
         in_dict = json.load(f)
 
     in_bbox ='{"type": "Polygon", "coordinates":'+str(in_dict['bbox'])+'}'
 
+    # list of spatio temporal short listed images.
     f = open("sp_subset.txt", "r")
     sp_subset = f.readlines()
 
+    # If no images comes under user given bbox
     if len(sp_subset) == 0:
         self.update_state(state="PROGRESS", meta={"extent": in_bbox, "type": "no_data"})
 
         time.sleep(5)
 
-        subprocess.call("rm *.vrt *.tif *.jpg *.xml *.img *.txt", shell=True)
+        subprocess.call("rm *.txt", shell=True)
         
-        return {'current': 'bleek', 'type': 'no_data', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
+        return {'type': 'no_data', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
 
 
     self.update_state(state="PROGRESS", meta={"extent": in_bbox, "type": "vector"})
@@ -81,13 +82,16 @@ def long_task(self):
     for i in range(0,len(image_dates)):
         image_dates[i] = image_dates[i][:-1]
     
+
+    # will be used in final result image generation
     cloud_percent = []
 
-
+    # Looping through all images
     for img in sp_subset:        
 
         date = img[11:15]+"-"+img[15:17]+"-"+img[17:19]
         
+        # Extracting root path of all bands and sun angle xml
         img_xml_tree = etree.parse(data_path+os.path.sep+sensor+os.path.sep+img[:-1]+os.path.sep+"MTD_MSIL1C.xml")
         img_xml_root = img_xml_tree.getroot()
 
@@ -95,14 +99,14 @@ def long_task(self):
 
         band_path = data_path+os.path.sep+sensor+os.path.sep+img[:-1]+os.path.sep
 
-
         sun_angle_path = (band_list[0].text).rsplit(os.path.sep, 2)[0]
 
+        # Fmask steps
         subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", img[:-6]+"_allbands.vrt", band_path+band_list[0].text+".jp2", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2", band_path+band_list[4].text+".jp2", band_path+band_list[5].text+".jp2", band_path+band_list[6].text+".jp2", band_path+band_list[7].text+".jp2", band_path+band_list[8].text+".jp2", band_path+band_list[9].text+".jp2", band_path+band_list[10].text+".jp2", band_path+band_list[11].text+".jp2", band_path+band_list[12].text+".jp2"])
 
         subprocess.call(["fmask_sentinel2makeAnglesImage.py", "-i", band_path+sun_angle_path+os.path.sep+"MTD_TL.xml", "-o", img[:-6]+"_angles.img"])
 
-
+        # Creating rgb vrt for sentinel then convert to jpg so it can be displayed in open layers as image. All 13 bands vrt cannot be converted to jpg
         subprocess.call([gdalbuildvrt, "-resolution", "user", "-tr", "60", "60", "-separate", img[:-6]+"_rgb.vrt", band_path+band_list[1].text+".jp2", band_path+band_list[2].text+".jp2", band_path+band_list[3].text+".jp2"])
 
         subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-scale", img[:-6]+"_rgb.vrt", img[:-6]+"_rgb.jpg"])
@@ -121,27 +125,28 @@ def long_task(self):
         transform = osr.CoordinateTransformation(img_srs, out_srs)  
         
         # getting image extent and transforming to 3857
-        grid_extent = img_info['wgs84Extent']['coordinates'][0]
-        grid_extent_x = [item[0] for item in grid_extent]
-        grid_extent_y = [item[1] for item in grid_extent]
-        grid_x_min = min(grid_extent_x)
-        grid_y_min = min(grid_extent_y)
-        grid_x_max = max(grid_extent_x)
-        grid_y_max = max(grid_extent_y)
+        img_extent = img_info['wgs84Extent']['coordinates'][0]
+        img_extent_x = [item[0] for item in img_extent]
+        img_extent_y = [item[1] for item in img_extent]
+        img_x_min = min(img_extent_x)
+        img_y_min = min(img_extent_y)
+        img_x_max = max(img_extent_x)
+        img_y_max = max(img_extent_y)
         
         point = ogr.Geometry(ogr.wkbPoint)
-        point.AddPoint(grid_x_min, grid_y_min)
+        point.AddPoint(img_x_min, img_y_min)
         point.Transform(transform)
-        grid_x_min = point.GetX()
-        grid_y_min = point.GetY()
-        point.AddPoint(grid_x_max, grid_y_max)
+        img_x_min = point.GetX()
+        img_y_min = point.GetY()
+        point.AddPoint(img_x_max, img_y_max)
         point.Transform(transform)
-        grid_x_max = point.GetX()
-        grid_y_max = point.GetY()
-        grid_extent = [grid_x_min, grid_y_min, grid_x_max, grid_y_max]
+        img_x_max = point.GetX()
+        img_y_max = point.GetY()
+        img_extent = [img_x_min, img_y_min, img_x_max, img_y_max]
 
-        self.update_state(state='PROGRESS', meta={'type': 'raster', 'extent': grid_extent, 'name':img[:-6]+'_rgb.jpg', 'image_size': img_size, 'image_dates': image_dates})
+        self.update_state(state='PROGRESS', meta={'type': 'raster', 'extent': img_extent, 'name':img[:-6]+'_rgb.jpg', 'image_size': img_size, 'image_dates': image_dates})
 
+        
         # small grid processing
 
         ds = gdal.Open(img[:-6]+"_allbands.vrt")
@@ -155,23 +160,28 @@ def long_task(self):
         ds = None
 
         # # TODO:update here for user specified grid size
-        x_arr = np.linspace(0, x, 3, endpoint=False).tolist()
-        y_arr = np.linspace(0, y, 3, endpoint=False).tolist()
+        x_arr = np.linspace(0, x, 5, endpoint=False).tolist()
+        y_arr = np.linspace(0, y, 5, endpoint=False).tolist()
 
         xy_cartesian = list(itertools.product(x_arr, y_arr))
 
         # # TODO:update here for user specified grid size
-        x_step = x/3
-        y_step = y/3
+        x_step = x/5
+        y_step = y/5
 
+        # Appending cloud_pixels for all grids and j is for unique naming for all grids
         cloud_pixels = 0
         j=0
-        # to process grids randomly
+
+        # To process grids randomly
         random.shuffle(xy_cartesian)
 
         for i in xy_cartesian:
             j += 1
+
+            # Genrating small grids from bi vrt
             subprocess.call([gdal_translate, "-srcwin", str(i[0]), str(i[1]), str(x_step), str(y_step), img[:-6]+"_allbands.vrt", img[:-6]+"_rast"+str(j)+".tif" ])
+
             subprocess.call(["fmask_sentinel2Stacked.py", "-a", img[:-6]+"_rast"+str(j)+".tif", "-z", img[:-6]+"_angles.img", "-o", img[:-6]+"_cloud"+str(j)+".img"])
             
             subprocess.call([gdal_translate, "-of", "JPEG", "-ot", "Byte", "-expand", "rgb", "-scale", img[:-6]+"_cloud"+str(j)+".img", img[:-6]+"_cloud"+str(j)+".jpg"])
@@ -189,7 +199,7 @@ def long_task(self):
             grid_x_max = max(grid_extent_x)
             grid_y_max = max(grid_extent_y)
             
-            # trasnforming extent to EPSG:3857 transfrom is coming from above
+            # trasnforming extent to EPSG:3857 transfrom is coming from above 142
             point = ogr.Geometry(ogr.wkbPoint)
             point.AddPoint(grid_x_min, grid_y_min)
             point.Transform(transform)
@@ -212,17 +222,9 @@ def long_task(self):
     
     
     # Creating final result image.
-    # image_dates coming from above.
-    # image_dates.append("2018-01-01")
-    # image_dates.append("2018-02-02")
-    # image_dates.append("2018-03-03")
 
     y_pos = np.arange(len(image_dates))
-    
-    # cloud_percent.append(40)
-    # cloud_percent.append(15)
-    # cloud_percent.append(50)
- 
+     
     barlist = plt.bar(y_pos, cloud_percent, align='center', alpha=0.5)
 
     for i in barlist:
@@ -250,12 +252,12 @@ def long_task(self):
 
     plt.text(len(cloud_percent),(max(cloud_percent))*0.4,cloud_stats, fontsize=20)
  
-    plt.savefig('result.pdf', bbox_inches="tight")
+    plt.savefig('result.png', bbox_inches="tight")
 
     subprocess.call("rm *.vrt *.tif *.jpg *.xml *.img *.txt", shell=True)
 
     # udatate status content
-    return {'current': 'bleek', 'type': 'raster', 'status': 'PROCESSED', 'result': 'All Steps are finished successfully'}
+    return {'type': 'raster', 'status': 'PROCESSED', 'image_size': img_size, 'extent': img_extent, 'result': 'All Steps are finished successfully'}
 
 
 
@@ -314,14 +316,15 @@ def index():
 # The format of route is kind of analysis/algorithm/name of the satellite data/
 @app.route('/cloud-cover/fmask/sentinel2', methods=['POST'])
 def cloud_cover():    
-    print(request.path)
 
+    # Storing user given input values so it can be opened in longtask function
     with open('in_dict.txt', 'w') as outfile:
         json.dump(request.json, outfile)
 
     input_dict = json.loads(request.data.decode())
 
     bbox = input_dict["bbox"]
+
     # getting integer part from epsd code.
     in_srs_code = int(input_dict["srs"].split(":")[1])  
 
@@ -346,16 +349,13 @@ def cloud_cover():
 
     in_poly.AssignSpatialReference(in_srs)
 
-    # TODO: optimiese this step wheather to transform input bbox or all shortlisted image bboxs.
-    #in_poly.Transform(transform)
-
-    
+ 
     # multi polygon for output
     out_multi_poly = ogr.Geometry(ogr.wkbMultiPolygon)
 
     out_multi_poly.AddGeometry(in_poly)
         
-    # shortlisting images in give time and spatila extend.
+    # shortlisting images in given time and spatila extent.
 
     time_range = input_dict["date_range"]
     satellite = input_dict["satellite"]
