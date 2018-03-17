@@ -36,11 +36,9 @@
         enter the cloud percent limit: <input type="number" id="cloud_percent" value=30> 
     </form> 
     
-    <!-- Clickable label for Vienna -->
-    <!-- <p id="time_range"><span style='color:rgb(0, 60, 255);'>2017-05-05</span>, <span style='color:rgb(0, 60, 255);'>2017-06-05</span>, <span style='color:yellow;'>2017-08-05</span>, 2017-11-05, 2017-12-05</p> -->
-    
-    <p id="status_message"></p>        
-      
+    <p id="status_message"></p>  
+
+
     <script>
 
     var styles = {
@@ -88,7 +86,7 @@
         view: new ol.View({
           projection: 'EPSG:3857',
           center: [848371.9457, 6791859.3619],
-          zoom: 10
+          zoom: 8
         })
       });
 
@@ -97,13 +95,17 @@
       map.addInteraction(select);
 
 
-      // var pos = [838405.962, 6863745.147];
-
-      // time_range marker
+      // message box top of images
       var mesg = new ol.Overlay({
       positioning: 'bottom-left',
       stopEvent: false
       });
+
+      document.getElementById('status_message').innerHTML="Muenster";
+      mesg.setElement(document.getElementById('status_message'));
+      mesg.setPosition([848371.9457, 6791859.3619])   
+
+      map.addOverlay(mesg)   
 
 
       // a DragBox interaction used to select features by drawing boxes
@@ -126,21 +128,10 @@
         var in_srs =map.getView().getProjection().getCode(); 
         var params = JSON.stringify({bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs});
 
-        console.log(extent);
-        console.log(bbox);
-        console.log(center);
-        // console.log(start_date);
-        // console.log(end_date);
-        // console.log(sensor);
-        // console.log(algorithm);
-        // console.log(cloud_percent);
-        // console.log(in_srs);
-        // console.log(params);
-
         var data = {bbox : extent, date_range: [start_date, end_date], satellite: sensor, method: algorithm, cloud_limit : cloud_percent, srs: in_srs};
 
         // For displying dates in different colors
-        var i = 0;
+        var i = 12;
 
         $.ajax({
           type: 'POST',
@@ -150,7 +141,6 @@
           contentType: 'application/json;charset=UTF-8',
           success: function(data, status, request){
             status_url = request.getResponseHeader('Location');
-            console.log(status_url);
             update_progress(status_url)
           },
           error:function() {
@@ -161,11 +151,10 @@
         // For checking name change condition - raster, vecotr
         var tmp;
 
+        // This is for final case where it shows result images downlods
         function update_progress(status_url){
           $.getJSON(status_url, function(data){
             if (data['result']){
-              console.log(data);
-              console.log(data['result'])
 
               var vectorLayerArray = new Array();
               map.getLayers().getArray().some(function(layer,i,array){
@@ -174,35 +163,52 @@
                 }
               }, this);
               vectorLayerArray.forEach(function(aVecLayer){
-                map.removeLayer(aVecLayer);
+                map.removeLayer(aVecLayer);                
               })
-              // var geojsonObject = data['current'];
-              // var vectorSource = new ol.source.Vector({
-              // features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
-              // });
 
-              var extent = [838405.962, 6684208.676, 1017845.334, 6863745.147];
+              map.removeOverlay(mesg);
+
+              // To differentiate failure case where no images should display
+              if (data['type'] != 'no_data'){ 
+                var extent = data['extent'];
                 
-              var ovProj = ol.proj.get('EPSG:3857');
+                var ovProj = ol.proj.get('EPSG:3857');
+
+                var image_size = data['image_size'];
                 
-              var rasterLayer = new ol.layer.Image({
-                  source: new ol.source.ImageStatic({
-                      url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/cloud.png',
-                      imageSize:[1848, 1849],
-                      projection: ovProj,
-                      imageExtent: extent
-                  })
-              });
+                var rasterLayer = new ol.layer.Image({
+                    source: new ol.source.ImageStatic({
+                        url: 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/result.png',
+                        imageSize:image_size,
+                        projection: ovProj,
+                        imageExtent: extent
+                    })
+                });
 
-              map.removeOverlay(mesg);          
-              map.addLayer(rasterLayer);
+                map.addLayer(rasterLayer);
 
+                // Dowunloading results image.
+                var element = document.createElement('a');
+                element.setAttribute('href', 'file:///C:/Users/pgulla/Desktop/thesis/openeo/webapp/sentinel/app/result.png');
+                element.setAttribute('download', 'Results');
+
+                element.style.dislay = 'none';
+                document.body.appendChild(element);
+
+                element.click();
+
+                document.body.removeChild(element);
+              }
+
+
+             
             }
             else {
               if (tmp != data['name']){
                  // retun in 2 seconds
                 tmp = data['name'];
                                 
+                // To show bounding box. and vector data.
                 if (data['type'] == 'vector'){
 
                   var geojsonObject = data['extent'];
@@ -214,22 +220,33 @@
                       style: styleFunction
                   });
 
+                  map.removeOverlay(mesg)
 
-                  var extentPoly = JSON.parse(data['extent']);
-                  var extentObject = extentPoly['coordinates'];
-                  extentArray = extentObject[Object.keys(extentObject)[0]];
-                  console.log(data['extent'])
-                  var pos = Object.values(extentArray)[0]
-                  console.log(pos)
+                  // To avoid to dislpay overlay mesg box incase of no feedback method
+                  if (data['status'] === 'no_feedback'){
 
-                  document.getElementById('status_message').innerHTML=" Spatio-Temporal Short listing of Images";
-                  mesg.setElement(document.getElementById('status_message'));
-                  mesg.setPosition(pos)
+                    map.addLayer(vectorLayer);
 
-                  map.addLayer(vectorLayer);
-                  map.addOverlay(mesg);
+                  }
 
+                  else {
+                    var extentPoly = JSON.parse(data['extent']);
+                    var extentObject = extentPoly['coordinates'];
+                    extentArray = extentObject[Object.keys(extentObject)[0]];
+                    var pos = Object.values(extentArray)[0];
+
+
+                    var element = mesg.getElement();
+                    element.innerHTML = " Spatio-Temporal Short listing of Images";
+                    mesg.setPosition(pos)
+
+                    map.addLayer(vectorLayer);
+                    map.addOverlay(mesg);
+
+                  }
                 }
+
+                // To show images and grids
                 else if (data['type'] == 'raster'){
 
                   var img_name = data['name']
@@ -248,26 +265,53 @@
                           imageExtent: extent
                       })
                   });
-                  console.log(data['image_dates'].join(", "));
-                  var image_dates = data['image_dates'].join(", ");
-                  var image_dates = image_dates.slice(0, i).fontcolor("blue")+image_dates.slice(i, i+11).fontcolor("red")+image_dates.slice(i+11,).fontcolor("white")
 
-                  var element = mesg.getElement();
-                  element.innerHTML = image_dates
+                  // Updating dates colour only for images not for grids.
+                  if (data['image_dates'] != ''){
+
+                    var image_dates = data['image_dates'].join(", ");
+                    var image_dates = image_dates.slice(0, i-12).fontcolor("blue")+image_dates.slice(i-12, i).fontcolor("red")+image_dates.slice(i,).fontcolor("white")
+
+                    map.removeOverlay(mesg)
+
+                    var element = mesg.getElement();
+                    element.innerHTML = image_dates
+                  
+                    // time_range postion
+                    var pos = mesg.getPosition();
+                    mesg.setPosition([extent[0], extent[3]])
+                    mesg.setElement(element)
+                    map.addOverlay(mesg);
+                    i +=12;
+                  }
+               
+                  map.addLayer(rasterLayer);
+                }
+
+                // Failure case so only showing grid and different status message
+                else{
+                  var geojsonObject = data['extent'];
+                  var vectorSource = new ol.source.Vector({
+                      features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+                  });
+                  var vectorLayer = new ol.layer.Vector({
+                      source: vectorSource,
+                      style: styleFunction
+                  });
+
                   map.removeOverlay(mesg)
 
-                  // time_range postion
-                  var pos = mesg.getPosition();
-                  mesg.setPosition([extent[0], extent[3]])
-                  console.log(extent)
+                  var extentPoly = JSON.parse(data['extent']);
+                  var extentObject = extentPoly['coordinates'];
+                  extentArray = extentObject[Object.keys(extentObject)[0]];
+                  var pos = Object.values(extentArray)[0]
 
-                  // document.getElementById('time_range').innerHTML="Time range will be displayed here";
+                  var element = mesg.getElement();
+                  element.innerHTML = " No Sentinel2A images available for given bounding box";
+                  mesg.setPosition(pos)
 
-                  mesg.setElement(element)
-
-                  map.addLayer(rasterLayer);
+                  map.addLayer(vectorLayer);
                   map.addOverlay(mesg);
-                  i +=11;
                 }  
               }
               else{
