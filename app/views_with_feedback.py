@@ -445,4 +445,6 @@ def cloud_cover():
     return jsonify({}), 202, {'Location': url_for('taskstatus',task_id=task.id)}
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=5000, debug=True)  #on local host
+    # works under internal network. enble this to run back-end for ifgi server. Then back end can be accesed inside wwu or with vpn on ifgi server.
+    # app.run(host = '0.0.0.0', port = 5000, debug= False)  
