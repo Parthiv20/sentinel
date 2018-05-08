@@ -62,7 +62,7 @@ def long_task(self):
     if len(sp_subset) == 0:
         self.update_state(state="PROGRESS", meta={"extent": in_bbox, "type": "no_data"})
 
-        time.sleep(5)
+        time.sleep(2)
 
         subprocess.call("rm *.txt", shell=True)
         
@@ -167,14 +167,14 @@ def long_task(self):
         ds = None
 
         # # TODO:update here for user specified grid size
-        x_arr = np.linspace(0, x, 5, endpoint=False).tolist()
-        y_arr = np.linspace(0, y, 5, endpoint=False).tolist()
+        x_arr = np.linspace(0, x, 3, endpoint=False).tolist()
+        y_arr = np.linspace(0, y, 3, endpoint=False).tolist()
 
         xy_cartesian = list(itertools.product(x_arr, y_arr))
 
         # # TODO:update here for user specified grid size
-        x_step = x/5
-        y_step = y/5
+        x_step = x/3
+        y_step = y/3
 
         # Appending cloud_pixels for all grids and j is for unique naming for all grids
         cloud_pixels = 0
